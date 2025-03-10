@@ -8,5 +8,5 @@
     Nhận thông báo về ưu đãi, xác nhận đặt bàn.
 Ứng dụng giúp tối ưu trải nghiệm ăn uống, tiết kiệm thời gian và mang đến sự tiện lợi cho người dùng.
 
-***Link Figma thiết kế :
+## Link Figma thiết kế :
 https://www.figma.com/design/nL7WPVvpkNuyt2ISamGSgg/Ung-Dung?node-id=0-1&t=d76lABNB3dorc4Jw-1
