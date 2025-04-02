@@ -1,4 +1,4 @@
-package com.example.foodorderingapplication.navigation
+package com.example.foodorderingapplication.view
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home

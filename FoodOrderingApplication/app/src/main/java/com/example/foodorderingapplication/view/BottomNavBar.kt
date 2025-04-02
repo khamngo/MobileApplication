@@ -1,4 +1,4 @@
-package com.example.foodorderingapplication.navigation
+package com.example.foodorderingapplication.view
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -12,6 +12,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.foodorderingapplication.view.BottomNavItem
 
 @Composable
 fun BottomNavBar(navController: NavController) {
@@ -22,7 +24,10 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem.Profile
     )
 
-    var selectedItem by remember { mutableIntStateOf(0) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val selectedItem = items.indexOfFirst { it.route == currentRoute }.takeIf { it >= 0 } ?: 0
 
     NavigationBar(containerColor = Color.White) {
         items.forEachIndexed { index, item ->
@@ -31,7 +36,7 @@ fun BottomNavBar(navController: NavController) {
                 label = { Text(item.title) },
                 selected = selectedItem == index,
                 onClick = {
-                    selectedItem = index
+                    selectedItem == index
                     navController.navigate(item.route) {
                         launchSingleTop = true
                         restoreState = true

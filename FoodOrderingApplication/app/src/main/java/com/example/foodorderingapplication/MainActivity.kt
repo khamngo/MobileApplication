@@ -15,50 +15,52 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.foodorderingapplication.home.HomeScreen
-import com.example.foodorderingapplication.menu.MenuScreen
-import com.example.foodorderingapplication.navigation.BottomNavBar
-import com.example.foodorderingapplication.navigation.BottomNavItem
-import com.example.foodorderingapplication.notifications.NotificationScreen
-import com.example.foodorderingapplication.profile.ProfileScreen
+import com.example.foodorderingapplication.view.HomeScreen
+import com.example.foodorderingapplication.view.MenuScreen
+import com.example.foodorderingapplication.view.BottomNavBar
+import com.example.foodorderingapplication.view.BottomNavItem
+import com.example.foodorderingapplication.view.NotificationScreen
+import com.example.foodorderingapplication.view.ProfileScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+//        enableEdgeToEdge()
         setContent {
-            MainScreen()
+            NavigationGraph()
         }
     }
 }
 
+//@Composable
+//fun MainScreen() {
+//    val navController = rememberNavController()
+//
+//    Scaffold(
+//        containerColor = Color(0xFFF7F7F7),
+//        bottomBar = { BottomNavBar(navController) }
+//    ) { paddingValues ->
+//
+//        Box(modifier = Modifier.padding(paddingValues)) {
+//            NavigationGraph(navController)
+//        }
+//    }
+//}
+
 @Composable
-fun MainScreen() {
+fun NavigationGraph() {
     val navController = rememberNavController()
 
-    Scaffold(
-        containerColor = Color(0xFFF7F7F7),
-        bottomBar = { BottomNavBar(navController) }
-    ) { paddingValues ->
-
-        Box(modifier = Modifier.padding(paddingValues)) {
-            NavigationGraph(navController)
-        }
-    }
-}
-
-@Composable
-fun NavigationGraph(navController: NavHostController) {
     NavHost(navController, startDestination = BottomNavItem.Menu.route) {
-        composable(BottomNavItem.Home.route) { HomeScreen() }
-        composable(BottomNavItem.Menu.route) { MenuScreen() }
-        composable(BottomNavItem.Notification.route) { (NotificationScreen()) }
-        composable(BottomNavItem.Profile.route) { ProfileScreen() }
+        composable(BottomNavItem.Home.route) { HomeScreen(navController = navController) }
+        composable(BottomNavItem.Menu.route) { MenuScreen( navController = navController) }
+        composable(BottomNavItem.Notification.route) { (NotificationScreen(navController = navController)) }
+        composable(BottomNavItem.Profile.route) { ProfileScreen(navController = navController) }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    MainScreen()
+    NavigationGraph()
 }

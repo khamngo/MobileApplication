@@ -1,15 +1,13 @@
-package com.example.foodorderingapplication.menu
+package com.example.foodorderingapplication.view
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -21,26 +19,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,34 +48,67 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.foodorderingapplication.MainScreen
+import androidx.navigation.NavController
+import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.models.Food
 import com.example.foodorderingapplication.ui.theme.MograFont
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
-fun MenuScreen() {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF7F7F7))
-    ) {
-        item { TopBar() }
-        item { BannerSlider() }
-        item { CategorySection() }
-        item { FoodListSection() }
+fun MenuScreen(navController: NavController) {
+    Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF7F7F7))
+
+            ) {
+                item { TopBar() }
+                item { BannerSlider() }
+                item { CategorySection() }
+                item { FoodListSection() }
+
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+            ) {
+                DraggableCartIcon()
+            }
+        }
     }
+    )
 }
+
+fun getFoodItems(): List<Food> = listOf(
+    Food("Gimbap", "Seaweed rice roll filled with a variety of delicious fillings.", 8.99, 4.5, R.drawable.tteok),
+    Food("Bibimbap", "A bowl of white rice topped with vegetable, egg and sliced meat.", 7.99, 4.7, R.drawable.gimbap),
+    Food("Tteok", "Korean rice-caked.", 10.99, 4.3,  R.drawable.hobakjuk)
+)
+
+fun getMoreFoodItems(): List<Food> = listOf(
+    Food("Hobakjuk", "Pumpkin-porridge.", 12.99, 4.6,R.drawable.bibimbap_owl),
+    Food("Bulgogi Beef", "Thinly sliced beef marinated in a mix of soy sauce.", 7.99, 4.8, R.drawable.korean_bulgogi_beef),
+    Food("Kongguksu", "A seasonal Korean noodle dish served in a cold soy milk broth.", 3.99, 4.1, R.drawable.kongguksu)
+)
 
 @Composable
 fun TopBar() {
@@ -180,7 +211,7 @@ fun BannerSlider() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center
+//        contentAlignment = Alignment.Center
     ) {
         HorizontalPager(
             state = pagerState,
@@ -261,7 +292,7 @@ fun CategoryItem(text: String, icon: ImageVector) {
                 .size(48.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFFFD700))
-                .clickable { /* Xử lý khi bấm */ },
+                .clickable { },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -304,7 +335,8 @@ fun FoodListSection() {
 
         Column(
             modifier = Modifier
-                .fillMaxWidth().padding(8.dp),
+                .fillMaxWidth()
+                .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             getMoreFoodItems().forEach { food ->
@@ -421,20 +453,65 @@ fun LargeFoodItem(food: Food) {
     }
 }
 
-fun getFoodItems(): List<Food> = listOf(
-    Food("Tteok", 10.99, 4.5, R.drawable.tteok),
-    Food("Gimbap", 8.99, 4.7, R.drawable.gimbap),
-    Food("Hobakjuk", 12.99, 4.8, R.drawable.hobakjuk)
-)
+@Composable
+fun DraggableCartIcon() {
+    val density = LocalDensity.current
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
 
-fun getMoreFoodItems(): List<Food> = listOf(
-    Food("Bibimbap Bowl", 5.99, 4.8, R.drawable.bibimbap_owl),
-    Food("Korean Bulgogi Beef", 7.49, 4.9, R.drawable.korean_bulgogi_beef),
-    Food("Kongguksu", 3.99, 4.7, R.drawable.kongguksu)
-)
+    LaunchedEffect(Unit) {
+        offsetX = with(density) { -10.dp.toPx() }
+        offsetY = with(density) { -10.dp.toPx() }
+    }
+
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+            .size(70.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFFFD700))
+                .align(Alignment.Center)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        offsetX += dragAmount.x
+                        offsetY += dragAmount.y
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_shopping_cart),
+                contentDescription = "Cart Icon",
+                modifier = Modifier.size(35.dp),
+                tint = Color.White
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .align(Alignment.TopEnd)
+                .clip(CircleShape)
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "2",
+                color = Color.White,
+                fontSize = MaterialTheme.typography.bodySmall.fontSize
+            )
+        }
+    }
+
+}
 
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    MainScreen()
+    NavigationGraph()
 }
