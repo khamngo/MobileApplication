@@ -1,23 +1,19 @@
 package com.example.foodorderingapplication.view
 
-import android.R.attr.text
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Tab
@@ -25,11 +21,9 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,19 +31,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.models.Food
 import com.example.foodorderingapplication.ui.theme.MograFont
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryScreen(navController: NavController) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+fun CategoryScreen(navController: NavController, name: String) {
+    var selectedTabIndex by remember { mutableIntStateOf(if (name == "popular") 0 else 1) }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -61,12 +52,11 @@ fun CategoryScreen(navController: NavController) {
                 .background(Color(0xFFFFD700)) // Màu vàng
                 .padding(16.dp)
         ) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-
-            ) {
-                IconButton(onClick = { navController.popBackStack() },
-                    modifier = Modifier.align(Alignment.CenterStart)) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_arrow_back),
                         contentDescription = "Arrow back",
@@ -97,17 +87,21 @@ fun CategoryScreen(navController: NavController) {
             }
         }
 
-        Row( modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 indicator = { tabPositions ->
                     // Vẽ đường line vàng ngắt quãng
-                    TabRowDefaults.Indicator(
+                    TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier
                             .tabIndicatorOffset(tabPositions[selectedTabIndex])
-                            .height(1.5.dp) // Độ dày của line
-                            .background(Color(0xFFFFD700)) // Màu vàng
+                            .height(1.5.dp)
+                            .background(Color(0xFFFFD700)),
                     )
                 }
             ) {
@@ -115,7 +109,7 @@ fun CategoryScreen(navController: NavController) {
                     selected = selectedTabIndex == 0,
                     onClick = { selectedTabIndex = 0 },
 
-                ) {
+                    ) {
                     Text(
                         "Popular",
                         fontWeight = FontWeight.Bold,
@@ -136,29 +130,30 @@ fun CategoryScreen(navController: NavController) {
                 }
             }
         }
+
         LazyColumn(modifier = Modifier.padding(16.dp)) {
-            item {
-                Text("Popular", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            }
-            items(getPopularItems()) { food ->
-                FoodItem2(food)
-            }
-            item {
-                Text("Deals", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            }
-            items(getDealsItems()) { food ->
-                FoodItem2(food)
+            if (selectedTabIndex == 0) {
+                item { Text("Popular", fontWeight = FontWeight.Bold, fontSize = 18.sp) }
+                items(getPopularItems()) { food ->
+                    FoodItems(food, onClick = { navController.navigate("detail/1") })
+                }
+            } else {
+                item { Text("Deal", fontWeight = FontWeight.Bold, fontSize = 18.sp) }
+                items(getDealsItems()) { food ->
+                    FoodItems(food, onClick = { navController.navigate("detail/1") })
+                }
             }
         }
     }
 }
 
 @Composable
-fun FoodItem2(food: Food) {
+fun FoodItems(food: Food, onClick: () -> Unit) {
     Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 8.dp).clickable{onClick()}
     ) {
         Image(
             painter = painterResource(id = food.imageRes),

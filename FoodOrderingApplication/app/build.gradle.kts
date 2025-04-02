@@ -41,6 +41,7 @@ android {
 
 dependencies {
     implementation("com.google.accompanist:accompanist-pager:0.32.0")
+    implementation("androidx.compose.material:material-icons-extended:1.5.0")
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.material3)

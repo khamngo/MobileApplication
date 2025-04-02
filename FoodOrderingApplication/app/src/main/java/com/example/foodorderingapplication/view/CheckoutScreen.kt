@@ -4,23 +4,20 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,20 +33,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.R
 
 @Composable
-fun CheckoutScreen() {
-    Column(modifier = Modifier.fillMaxSize()) {
+fun CheckoutScreen(navController: NavController) {
+    val subtotal = 19.2
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())) {
         // Header
-        HeaderSection()
+        HeaderSection("Checkout", navController)
 
         // Shipping, Delivery, Promos
-        ShippingDeliveryPromosSection()
+        ShippingDeliveryPromosSection(navController)
 
         // Items List
         ItemsList()
@@ -61,39 +61,12 @@ fun CheckoutScreen() {
         PaymentMethod()
 
         // Subtotal & Place Order Button
-        CheckoutFooter()
+        SubtotalAndAddToCart("Checkout", subtotal, navController, "")
     }
 }
 
 @Composable
-fun HeaderSection() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFFFD700)) // Màu vàng
-            .padding(top = 16.dp)
-    ) {
-        IconButton(
-            onClick = { },
-            modifier = Modifier.align(Alignment.CenterStart)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_arrow_back),
-                contentDescription = "Arrow back",
-            )
-        }
-
-        Text(
-            text = "Checkout",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.Center)
-        )
-    }
-}
-
-@Composable
-fun ShippingDeliveryPromosSection() {
+fun ShippingDeliveryPromosSection(navController: NavController) {
     val showDialog = remember { mutableStateOf(false) }
     val selectedDate = remember { mutableStateOf("Shipping now") }
     val selectedTime = remember { mutableStateOf("") }
@@ -102,8 +75,7 @@ fun ShippingDeliveryPromosSection() {
         HorizontalDivider()
 
         ShippingRow("SHIPPING", "Add shipping address") {
-            // Xử lý khi nhấn vào SHIPPING
-            println("SHIPPING clicked!")
+            navController.navigate("add_shopping_address")
         }
         HorizontalDivider()
 
@@ -132,7 +104,7 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() } // Xử lý khi nhấn cả hàng
+            .clickable { onClick() }
             .padding(14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -219,20 +191,26 @@ fun OrderSummary() {
         SummaryRow("Shipping total", "Free")
         SummaryRow("Taxes", "$2.00")
         HorizontalDivider()
-        SummaryRow("Total", "$25.98", Color.Red)
+        SummaryRow("Total", "$25.98", Color.Red, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-fun SummaryRow(label: String, value: String, textColor: Color = Color.Black) {
+fun SummaryRow(
+    label: String,
+    value: String,
+    textColor: Color = Color.Black,
+    fontSize: TextUnit = 14.sp,
+    fontWeight: FontWeight = FontWeight.Normal
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label)
-        Text(text = value, fontWeight = FontWeight.Bold, color = textColor)
+        Text(text = label, fontSize = fontSize, fontWeight = fontWeight)
+        Text(text = value, fontSize = fontSize, fontWeight = fontWeight, color = textColor)
     }
 }
 
@@ -275,32 +253,6 @@ fun PaymentOption(image: Int, label: String, selected: Boolean) {
         ) {
             Text(label)
             RadioButton(selected = selected, onClick = {})
-        }
-    }
-}
-
-@Composable
-fun CheckoutFooter() {
-    val subtotal = 25.98
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("$${"%.2f".format(subtotal)}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text("$25.98", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Red)
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { /* Xử lý thanh toán */ },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)), // Màu vàng
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Text("Place Order", fontSize = 16.sp, color = Color.White)
         }
     }
 }
@@ -365,10 +317,4 @@ fun DeliveryOption(date: String, time: String, onConfirm: (String, String) -> Un
         Text(date)
         Text(time)
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CheckoutPreview() {
-    CheckoutScreen()
 }

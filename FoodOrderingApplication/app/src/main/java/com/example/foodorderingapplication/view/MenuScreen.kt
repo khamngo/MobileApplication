@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +31,10 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.LocalOffer
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -82,8 +88,8 @@ fun MenuScreen(navController: NavController) {
             ) {
                 item { TopBar() }
                 item { BannerSlider() }
-                item { CategorySection() }
-                item { FoodListSection() }
+                item { CategorySection(navController) }
+                item { FoodListSection(navController) }
 
             }
 
@@ -91,23 +97,29 @@ fun MenuScreen(navController: NavController) {
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
             ) {
-                DraggableCartIcon()
+                DraggableCartIcon(navController)
             }
         }
     }
     )
 }
 
-fun getFoodItems(): List<Food> = listOf(
-    Food("Gimbap", "Seaweed rice roll filled with a variety of delicious fillings.", 8.99, 4.5, R.drawable.tteok),
-    Food("Bibimbap", "A bowl of white rice topped with vegetable, egg and sliced meat.", 7.99, 4.7, R.drawable.gimbap),
-    Food("Tteok", "Korean rice-caked.", 10.99, 4.3,  R.drawable.hobakjuk)
-)
-
 fun getMoreFoodItems(): List<Food> = listOf(
-    Food("Hobakjuk", "Pumpkin-porridge.", 12.99, 4.6,R.drawable.bibimbap_owl),
-    Food("Bulgogi Beef", "Thinly sliced beef marinated in a mix of soy sauce.", 7.99, 4.8, R.drawable.korean_bulgogi_beef),
-    Food("Kongguksu", "A seasonal Korean noodle dish served in a cold soy milk broth.", 3.99, 4.1, R.drawable.kongguksu)
+    Food("Hobakjuk", "Pumpkin-porridge.", 12.99, 4.6, R.drawable.bibimbap_owl),
+    Food(
+        "Bulgogi Beef",
+        "Thinly sliced beef marinated in a mix of soy sauce.",
+        7.99,
+        4.8,
+        R.drawable.korean_bulgogi_beef
+    ),
+    Food(
+        "Kongguksu",
+        "A seasonal Korean noodle dish served in a cold soy milk broth.",
+        3.99,
+        4.1,
+        R.drawable.kongguksu
+    )
 )
 
 @Composable
@@ -211,7 +223,6 @@ fun BannerSlider() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 12.dp),
-//        contentAlignment = Alignment.Center
     ) {
         HorizontalPager(
             state = pagerState,
@@ -268,21 +279,21 @@ fun BannerSlider() {
 }
 
 @Composable
-fun CategorySection() {
+fun CategorySection(navController: NavController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Start
     ) {
-        CategoryItem("Popular", Icons.Default.Star)
+        CategoryItem("Popular", Icons.Default.Star, navController, "popular")
         Spacer(modifier = Modifier.size(16.dp))
-        CategoryItem("Deal", Icons.Default.ShoppingCart)
+        CategoryItem("Deal", Icons.Outlined.LocalOffer, navController, "deal")
     }
 }
 
 @Composable
-fun CategoryItem(text: String, icon: ImageVector) {
+fun CategoryItem(text: String, icon: ImageVector, navController: NavController, name: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(horizontal = 8.dp)
@@ -292,7 +303,7 @@ fun CategoryItem(text: String, icon: ImageVector) {
                 .size(48.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFFFD700))
-                .clickable { },
+                .clickable { navController.navigate("category/${name}") },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -313,20 +324,21 @@ fun CategoryItem(text: String, icon: ImageVector) {
 }
 
 @Composable
-fun FoodListSection() {
+fun FoodListSection(navController: NavController) {
     Column(modifier = Modifier.padding(16.dp))
     {
         Text("Best Seller", fontSize = 18.sp, fontWeight = FontWeight.Bold)
 
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
                 .padding(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            getFoodItems().forEach { food ->
-                FoodItem(food)
+            items(getFoodItems()) { food ->
+                FoodItem(food, onClick = {
+                    navController.navigate("detail/1")
+                })
             }
         }
 
@@ -340,121 +352,95 @@ fun FoodListSection() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             getMoreFoodItems().forEach { food ->
-                LargeFoodItem(food)
+                LargeFoodItem(food, onClick = {
+                    navController.navigate("detail/1")
+                })
             }
         }
     }
 }
 
 @Composable
-fun FoodItem(food: Food) {
+fun LargeFoodItem(food: Food, onClick: () -> Unit) {
     Column(
-        modifier = Modifier
-            .width(160.dp)
-            .height(200.dp)
-            .background(Color.White, shape = RoundedCornerShape(8.dp))
-
-    ) {
-        Image(
-            painter = painterResource(id = food.imageRes),
-            contentDescription = food.name,
-            modifier = Modifier
-                .fillMaxHeight(0.75f)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop
-        )
-        Text(
-            text = food.name,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(4.dp),
-            fontSize = 14.sp
-        )
-        Text(
-            text = "$${food.price}",
-            color = Color.Gray,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(4.dp),
-            fontSize = 14.sp
-        )
-    }
-}
-
-@Composable
-fun LargeFoodItem(food: Food) {
-    Box {
-        Image(
-            painter = painterResource(id = food.imageRes),
-            contentDescription = food.name,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop
-        )
-
-        Box(
-            modifier = Modifier
-                .padding(8.dp)
-                .background(Color.White, shape = RoundedCornerShape(16.dp))
-                .padding(horizontal = 8.dp, vertical = 6.dp)
-                .align(Alignment.BottomStart)
-        ) {
-            Text(
-                text = "$${food.price}",
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .padding(8.dp)
-//                .background(Color.White, shape = RoundedCornerShape(16.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-                .align(Alignment.TopEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.FavoriteBorder,
-                contentDescription = "Favorivite",
-                tint = Color.White,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-    }
-
-    // Tên món ăn & Đánh giá
-    Row(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-            .offset(y = (-6).dp),
-        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = food.name,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
-        )
-        Row {
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = "Rating",
-                tint = Color(0xFFFFD700),
-                modifier = Modifier.size(18.dp)
+        Box {
+            Image(
+                painter = painterResource(id = food.imageRes),
+                contentDescription = food.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onClick() },
+                contentScale = ContentScale.Crop
             )
+
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .background(Color.White, shape = RoundedCornerShape(16.dp))
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .align(Alignment.BottomStart)
+            ) {
+                Text(
+                    text = "$${food.price}",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .align(Alignment.TopEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FavoriteBorder,
+                    contentDescription = "Favorite",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+
+        // Tên món ăn & Đánh giá
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Text(
-                text = food.rating.toString(),
-                fontSize = 14.sp,
+                text = food.name,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                fontSize = 16.sp
             )
+            Row {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Rating",
+                    tint = Color(0xFFFFD700),
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = food.rating.toString(),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
         }
     }
+
 }
 
 @Composable
-fun DraggableCartIcon() {
+fun DraggableCartIcon(navController: NavController) {
     val density = LocalDensity.current
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
@@ -475,6 +461,7 @@ fun DraggableCartIcon() {
                 .clip(CircleShape)
                 .background(Color(0xFFFFD700))
                 .align(Alignment.Center)
+                .clickable { navController.navigate("cart") }
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
@@ -487,7 +474,8 @@ fun DraggableCartIcon() {
             Icon(
                 painter = painterResource(id = R.drawable.ic_shopping_cart),
                 contentDescription = "Cart Icon",
-                modifier = Modifier.size(35.dp),
+                modifier = Modifier
+                    .size(35.dp),
                 tint = Color.White
             )
         }

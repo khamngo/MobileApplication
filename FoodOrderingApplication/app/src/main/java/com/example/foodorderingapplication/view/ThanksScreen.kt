@@ -19,13 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.foodorderingapplication.R
 
 @Composable
-fun ThanksScreen() {
+fun ThanksScreen(navController: NavController) {
     Column(
         verticalArrangement = Arrangement.SpaceAround,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -46,7 +48,9 @@ fun ThanksScreen() {
                 "Your booking has been confirmed for Wednesday 2th March, 2025 at 3.30pm. " +
                         "You have booked KFOODS1 table for 1 Seat",
                 fontSize = 16.sp,
-                color = Color.Gray
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
         Image(
@@ -59,7 +63,7 @@ fun ThanksScreen() {
 
         Column {
             Button(
-                onClick = {},
+                onClick = {navController.navigate("")},
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -73,7 +77,7 @@ fun ThanksScreen() {
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = {},
+                onClick = {navController.navigate("menu")},
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -85,10 +89,4 @@ fun ThanksScreen() {
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ThanksPreview() {
-    ThanksScreen()
 }

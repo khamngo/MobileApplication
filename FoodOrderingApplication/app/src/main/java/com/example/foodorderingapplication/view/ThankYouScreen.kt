@@ -24,10 +24,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.foodorderingapplication.R
 
 @Composable
-fun ThankYouScreen() {
+fun ThankYouScreen(navController: NavController) {
     Column(
         verticalArrangement = Arrangement.SpaceAround,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -54,7 +55,7 @@ fun ThankYouScreen() {
         )
 
         Button(
-            onClick = {},
+            onClick = {navController.navigate("menu")},
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -66,10 +67,4 @@ fun ThankYouScreen() {
         }
 
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ThankYouPreview() {
-    ThankYouScreen()
 }
