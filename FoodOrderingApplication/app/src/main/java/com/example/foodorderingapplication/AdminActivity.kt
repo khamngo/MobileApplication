@@ -1,0 +1,66 @@
+package com.example.foodorderingapplication
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.foodorderingapplication.view.BottomNavItem
+import com.example.foodorderingapplication.view.admin.AddFoodScreen
+import com.example.foodorderingapplication.view.admin.CreateNewAccountScreen
+import com.example.foodorderingapplication.view.admin.EditFoodScreen
+import com.example.foodorderingapplication.view.admin.HomeAdminScreen
+import com.example.foodorderingapplication.view.admin.OrderDetailScreen
+import com.example.foodorderingapplication.view.admin.OrderListScreen
+import com.example.foodorderingapplication.view.admin.ProfileAdminScreen
+import com.example.foodorderingapplication.view.admin.RevenueScreen
+import com.example.foodorderingapplication.view.admin.ReviewDetailScreen
+import com.example.foodorderingapplication.view.admin.ReviewListScreen
+
+class AdminActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            NavigationGraphAdmin()
+        }
+    }
+}
+
+@Composable
+fun NavigationGraphAdmin() {
+    val navController = rememberNavController()
+
+    NavHost(navController, startDestination = BottomNavItem.Home.route) {
+        composable(BottomNavItem.Home.route) { HomeAdminScreen(navController = navController) }
+        composable(BottomNavItem.Profile.route) { ProfileAdminScreen(navController = navController) }
+
+        composable("add_food") { AddFoodScreen(navController = navController) }
+        composable("edit_food/{foodId}") {backStackEntry ->
+            val foodId = backStackEntry.arguments?.getString("foodId") ?: ""
+            EditFoodScreen(navController = navController, foodId = foodId)
+        }
+        composable("order") { OrderListScreen(navController = navController) }
+
+        composable("order/{orderId}") { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            OrderDetailScreen(navController = navController, orderId = orderId)
+        }
+        composable("revenue") { RevenueScreen(navController = navController) }
+        composable("review") { ReviewListScreen(navController = navController) }
+
+        composable("review/{reviewId}") { backStackEntry ->
+            val reviewId = backStackEntry.arguments?.getString("reviewId") ?: ""
+            ReviewDetailScreen(navController = navController, reviewId = reviewId)
+        }
+        composable("new_account") { CreateNewAccountScreen(navController = navController) }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview1() {
+    NavigationGraphAdmin()
+}

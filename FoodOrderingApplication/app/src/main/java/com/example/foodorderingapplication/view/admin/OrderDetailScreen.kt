@@ -29,46 +29,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.models.Order
-
-val orders = listOf(
-    Order(1, "11 AM : 03-03-2025", "Tteok", "Korean rice-caked.", 10.99, "None", 21.98, "Preparing"),
-    Order(2, "12 PM : 04-03-2025", "Bibimbap", "Korean mixed rice.", 12.50, "Extra sauce", 25.00, "Completed"),
-    Order(3, "10 AM : 05-03-2025", "Kimchi", "Fermented vegetables.", 5.99, "Less spicy", 11.98, "Cancelled")
-)
+import com.example.foodorderingapplication.view.HeaderSection
 
 @Composable
-fun OrderListScreen(orderList: List<Order>) {
+fun OrderDetailScreen(navController: NavController, orderId: String) {
+    val orderList = listOf(
+        Order(1, "11 AM : 03-03-2025", "Tteok", "Korean rice-caked.", 10.99, "None", 21.98, "Preparing"),
+        Order(2, "12 PM : 04-03-2025", "Bibimbap", "Korean mixed rice.", 12.50, "Extra sauce", 25.00, "Completed"),
+        Order(3, "10 AM : 05-03-2025", "Kimchi", "Fermented vegetables.", 5.99, "Less spicy", 11.98, "Cancelled")
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
         // Header
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFFD700)) // Màu vàng
-                .padding(top = 16.dp)
-        ) {
-            IconButton(
-                onClick = { },
-                modifier = Modifier.align(Alignment.CenterStart)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_arrow_back),
-                    contentDescription = "Arrow back",
-                )
-            }
-
-            Text(
-                text = "Order Detail",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
+        HeaderSection("Order Detail", navController)
 
         // Danh sách hóa đơn
         LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -186,8 +166,3 @@ fun InfoRow(label: String, value: String) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun OrderDetailPreview() {
-    OrderListScreen(orderList = orders)
-}

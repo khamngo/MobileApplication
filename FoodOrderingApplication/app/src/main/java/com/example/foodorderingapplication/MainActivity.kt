@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.foodorderingapplication.view.AddShippingScreen
 import com.example.foodorderingapplication.view.BottomNavItem
 import com.example.foodorderingapplication.view.CartScreen
@@ -33,9 +35,9 @@ class MainActivity : ComponentActivity() {
 fun NavigationGraph() {
     val navController = rememberNavController()
 
-    NavHost(navController, startDestination = BottomNavItem.Menu.route) {
+    NavHost(navController, startDestination = BottomNavItem.Profile.route) {
         composable(BottomNavItem.Home.route) { HomeScreen(navController = navController) }
-        composable(BottomNavItem.Menu.route) { MenuScreen( navController = navController) }
+        composable(BottomNavItem.Menu.route) { MenuScreen(navController = navController) }
         composable(BottomNavItem.Notification.route) { (NotificationScreen(navController = navController)) }
         composable(BottomNavItem.Profile.route) { ProfileScreen(navController = navController) }
 
@@ -44,10 +46,14 @@ fun NavigationGraph() {
         composable("add_shopping_address") { AddShippingScreen(navController = navController) }
         composable("category/{name}") { backStackEntry ->
             val name = backStackEntry.arguments?.getString("name") ?: ""
-            CategoryScreen(navController = navController, name = name) }
+            CategoryScreen(navController = navController, name = name)
+        }
 
-        composable("detail/{foodId}") { backStackEntry ->
-            val foodId = backStackEntry.arguments?.getString("foodId")?.toIntOrNull() ?: 0
+        composable(
+            route = "detail/{foodId}",
+            arguments = listOf(navArgument("foodId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val foodId = backStackEntry.arguments?.getString("foodId")
             FoodDetailScreen(navController = navController, foodId = foodId)
         }
 

@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,15 +34,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.viewmodel.FoodViewModel
 
 @Composable
-fun FoodDetailScreen(navController: NavHostController, foodId: Int) {
+fun FoodDetailScreen(navController: NavHostController, foodId: String?, viewModel: FoodViewModel = viewModel()) {
     var selectedPortion by remember { mutableStateOf("8") }
     var quantity by remember { mutableIntStateOf(1) }
     var selectedDrink by remember { mutableStateOf("Fanta") }
@@ -54,73 +58,104 @@ fun FoodDetailScreen(navController: NavHostController, foodId: Int) {
         (portionPrices.find { it.first == selectedPortion }?.second ?: 0.0) * quantity +
                 (drinkPrices.find { it.first == selectedDrink }?.second ?: 0.0)
 
-    Column(
+    val foods by viewModel.foods.collectAsState()
+    val food = foods.find { it.id == foodId }
+
+    val context = LocalContext.current
+    val imageId = remember(food?.imageRes) {
+        context.resources.getIdentifier(food?.imageRes, "drawable", context.packageName)
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
-            .verticalScroll(rememberScrollState())
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.bibimbap_owl),
-                contentDescription = "Food Image",
+        food?.let {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentScale = ContentScale.Crop
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-                    .matchParentSize()
-                    .align(Alignment.TopStart)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 120.dp)
             ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_arrow_back),
-                        contentDescription = "Arrow back",
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(id = imageId),
+                        contentDescription = "Food Image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp)
+                            .matchParentSize()
+                            .align(Alignment.TopStart)
+                    ) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_arrow_back),
+                                contentDescription = "Arrow back",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        IconButton(onClick = { }) {
+                            Icon(
+                                imageVector = Icons.Filled.FavoriteBorder,
+                                contentDescription = "FavoriteBorder",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = it.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(16.dp)
                     )
                 }
-                IconButton(onClick = { }) {
-                    Icon(
-                        imageVector = Icons.Filled.FavoriteBorder,
-                        contentDescription = "FavoriteBorder",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
+
+                // Portion Section
+                Column(modifier = Modifier.padding(16.dp)) {
+                    PortionSelection(portionPrices, selectedPortion) { selectedPortion = it }
+                    QuantitySelector(quantity) { quantity = it }
+                    ExtraDrinksSelection(drinkPrices, selectedDrink) { selectedDrink = it }
+                    InstructionsInput(instructions) { instructions = it }
                 }
             }
+        }?: run {
+            Text("Không tìm thấy món ăn!", modifier = Modifier.padding(16.dp))
+        }
 
-            Text(
-                text = "Bibimbap Bowl",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
+        // Subtotal & Button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(Color.White)
+        ) {
+            SubtotalAndButton(
+                "Add to cart",
+                subtotal = subtotal,
+                navController = navController,
+                "cart"
             )
         }
-
-        // Portion Section
-        Column(modifier = Modifier.padding(16.dp)) {
-            PortionSelection(portionPrices, selectedPortion) { selectedPortion = it }
-            QuantitySelector(quantity) { quantity = it }
-            ExtraDrinksSelection(drinkPrices, selectedDrink) { selectedDrink = it }
-            InstructionsInput(instructions) { instructions = it }
-        }
-
-        // Subtotal & Add to Cart Button
-        SubtotalAndAddToCart("Add to cart", subtotal = subtotal, navController = navController, "cart")
     }
 }
+
 
 @Composable
 fun PortionSelection(

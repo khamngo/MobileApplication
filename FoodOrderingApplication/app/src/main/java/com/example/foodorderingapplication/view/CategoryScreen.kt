@@ -22,25 +22,34 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.models.Food
 import com.example.foodorderingapplication.ui.theme.MograFont
+import com.example.foodorderingapplication.viewmodel.FoodViewModel
 
 @Composable
-fun CategoryScreen(navController: NavController, name: String) {
+fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavController, name: String) {
     var selectedTabIndex by remember { mutableIntStateOf(if (name == "popular") 0 else 1) }
+    val foods by viewModel.foods.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -131,16 +140,17 @@ fun CategoryScreen(navController: NavController, name: String) {
             }
         }
 
-        LazyColumn(modifier = Modifier.padding(16.dp)) {
+        LazyColumn(modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (selectedTabIndex == 0) {
                 item { Text("Popular", fontWeight = FontWeight.Bold, fontSize = 18.sp) }
-                items(getPopularItems()) { food ->
-                    FoodItems(food, onClick = { navController.navigate("detail/1") })
+                items(foods) { food ->
+                    FoodItems(food, onClick = { navController.navigate("detail/${food.id}") })
                 }
             } else {
                 item { Text("Deal", fontWeight = FontWeight.Bold, fontSize = 18.sp) }
-                items(getDealsItems()) { food ->
-                    FoodItems(food, onClick = { navController.navigate("detail/1") })
+                items(foods) { food ->
+                    FoodItems(food, onClick = { navController.navigate("detail/${food.id}") })
                 }
             }
         }
@@ -149,22 +159,25 @@ fun CategoryScreen(navController: NavController, name: String) {
 
 @Composable
 fun FoodItems(food: Food, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val imageId = remember(food.imageRes) {
+        context.resources.getIdentifier(food.imageRes, "drawable", context.packageName)
+    }
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp).clickable{onClick()}
+       .clickable{onClick()}
     ) {
         Image(
-            painter = painterResource(id = food.imageRes),
-            contentDescription = null,
-            modifier = Modifier.size(80.dp)
+            painter = painterResource(id = imageId),
+            contentDescription = "Image",
+            modifier = Modifier.size(80.dp), contentScale = ContentScale.Crop
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
-                .padding(start = 8.dp)
-                .weight(1f)
+               .fillMaxWidth()
         ) {
             Text(food.name, fontWeight = FontWeight.Bold)
             Text(food.description, fontSize = 14.sp, color = Color.Gray)
@@ -173,38 +186,8 @@ fun FoodItems(food: Food, onClick: () -> Unit) {
     }
 }
 
-fun getPopularItems() = listOf(
-    Food(
-        "Gimbap",
-        "Seaweed rice roll filled with a variety of delicious fillings.",
-        8.99,
-        4.5,
-        R.drawable.gimbap
-    ),
-    Food(
-        "Bibimbap",
-        "A bowl of white rice topped with vegetable, egg and sliced meat.",
-        7.99,
-        4.7,
-        R.drawable.bibimbap_owl
-    ),
-    Food("Tteok", "Korean rice-caked.", 10.99, 4.3, R.drawable.tteok)
-)
-
-fun getDealsItems() = listOf(
-    Food("Hobakjuk", "Pumpkin-porridge.", 12.99, 4.6, R.drawable.hobakjuk),
-    Food(
-        "Bulgogi Beef",
-        "Thinly sliced beef marinated in a mix of soy sauce.",
-        7.99,
-        4.8,
-        R.drawable.korean_bulgogi_beef
-    ),
-    Food(
-        "Kongguksu",
-        "A seasonal Korean noodle dish served in a cold soy milk broth.",
-        3.99,
-        4.1,
-        R.drawable.kongguksu
-    )
-)
+@Preview(showBackground = true)
+@Composable
+fun Preview() {
+    NavigationGraph()
+}

@@ -2,7 +2,6 @@ package com.example.foodorderingapplication.view.admin
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,15 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,12 +35,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.NavigationGraph
+import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.view.HeaderSection
 
 @Composable
-fun EditFoodScreen(navController: NavController, foodId: String) {
+fun AddFoodScreen(navController: NavController){
     var foodName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
@@ -69,7 +62,7 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
-            HeaderSection("Edit Food", navController)
+            HeaderSection("Add Food", navController)
 
             CustomTextField(
                 value = foodName, onValueChange = { foodName = it }, label = "Food Name"
@@ -137,7 +130,7 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .background(Color.White) .padding(16.dp)
+                .background(Color.White) .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             Button(
                 onClick = {
@@ -155,61 +148,9 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
 
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SelectTagDropdown(
-    selectedOption: String,
-    onOptionSelected: (String) -> Unit
-) {
-    val options = listOf("Popular", "Deal", "Title", "Explore")
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-    ) {
-        TextField(
-            value = selectedOption,
-            onValueChange = {},
-            readOnly = true,
-//            label = { Text("Select Tag") },
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent
-            )
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { selectionOption ->
-                DropdownMenuItem(
-                    text = { Text(selectionOption) },
-                    onClick = {
-                        onOptionSelected(selectionOption)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
-fun Preview() {
+fun Preview3() {
     NavigationGraph()
 }
+

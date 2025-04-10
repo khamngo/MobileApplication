@@ -1,13 +1,16 @@
 package com.example.foodorderingapplication.view
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -165,20 +168,31 @@ fun DefaultAccountCheckbox(isDefault: Boolean, onCheckedChange: (Boolean) -> Uni
 
 @Composable
 fun RestaurantSelectionSection(restaurants: List<Restaurant>) {
+    val selectedRestaurant = remember { mutableStateOf(restaurants.firstOrNull()) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp)) {
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
         Text(
             "Choose a restaurant",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 8.dp)
         )
-        restaurants.forEach { RestaurantCard(it) }
+
+        restaurants.forEach { restaurant ->
+            RestaurantCard(
+                restaurant = restaurant,
+                isSelected = selectedRestaurant.value == restaurant,
+                onSelect = { selectedRestaurant.value = restaurant }
+            )
+        }
     }
 }
+
 
 @Composable
 fun ConfirmButton(onClick: () -> Unit) {
@@ -204,9 +218,13 @@ fun ConfirmButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun RestaurantCard(restaurant: Restaurant) {
+fun RestaurantCard(
+    restaurant: Restaurant,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
     Card(
-        border = BorderStroke(2.dp, Color(0xFFFFD700)),
+        border = BorderStroke(2.dp, if (isSelected) Color(0xFFFFD700) else Color.Gray),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
@@ -217,45 +235,40 @@ fun RestaurantCard(restaurant: Restaurant) {
         ) {
             Text(restaurant.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Home, contentDescription = "Address", tint = Color.Black)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(restaurant.address)
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Phone, contentDescription = "Phone", tint = Color.Black)
-
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(restaurant.phone)
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                Icon(Icons.Default.DateRange, contentDescription = "Time", tint = Color.Black)
 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DateRange, contentDescription = "Time", tint = Color.Black)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(restaurant.hours)
             }
+
             Button(
-                onClick = { /* Xử lý chọn cửa hàng */ },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)), // Màu vàng
+                onClick = onSelect,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isSelected) Color(0xFFFFD700) else Color.White
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
             ) {
-                Text("Chọn cửa hàng", fontSize = 14.sp, color = Color.Black)
+                Text(
+                    "Chọn cửa hàng",
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
             }
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun Preview1() {
-    NavigationGraph()
-}

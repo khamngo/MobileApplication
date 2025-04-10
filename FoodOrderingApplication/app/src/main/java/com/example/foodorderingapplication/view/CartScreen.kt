@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -23,75 +21,92 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.foodorderingapplication.NavigationGraph
-import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.models.Cart
+import com.example.foodorderingapplication.viewmodel.CartViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun CartScreen(navController: NavController) {
-    val cartItems = listOf(
-        Cart(R.drawable.hobakjuk, "Hokakjuk", 12.99, 1),
-        Cart(R.drawable.tteok, "Tteok", 10.99, 1)
-    )
+fun CartScreen(viewModel: CartViewModel = viewModel(), navController: NavController) {
+    val cartItems by viewModel.cartItems.collectAsState()
+    val total by viewModel.total.collectAsState()
 
-    val subtotal = cartItems.sumOf { it.price * it.quantity }
-
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .background(Color(0xFFF7F7F7))
     ) {
-        HeaderSection("Cart", navController)
-
-        // Cart Items
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 120.dp)
         ) {
-            cartItems.forEach { CartItemView(it) }
-        }
+            HeaderSection("Cart", navController)
 
-        // Popular Section
-        Text(
-            text = "Popular",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 14.dp)
-        )
+            // Cart Items
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                cartItems.forEach { CartItemView(it) }
+            }
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            items(getFoodItems()) { food ->
-                FoodItem(food, onClick = {
-                    navController.navigate("detail/1")
-                })
+            // Popular Section
+            Text(
+                text = "Popular",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 14.dp)
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+//                items(cartItems) { item ->
+//                    FoodItem(item, onClick = {
+//                        navController.navigate("detail/1")
+//                    })
+//                }
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        SubtotalAndAddToCart("Checkout", subtotal, navController, "checkout")
+        // Subtotal & Button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(Color.White)
+        ) {
+            SubtotalAndButton("Checkout", total, navController, "checkout")
+        }
     }
 }
 
 @Composable
 fun CartItemView(item: Cart) {
+    val context = LocalContext.current
+    val imageId = remember(item.imageRes) {
+        context.resources.getIdentifier(item.imageRes, "drawable", context.packageName)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth(),
@@ -100,7 +115,7 @@ fun CartItemView(item: Cart) {
     ) {
 
         Image(
-            painter = painterResource(id = item.imageRes),
+            painter = painterResource(id = imageId),
             contentDescription = item.name,
             modifier = Modifier.size(84.dp)
         )
@@ -134,7 +149,8 @@ fun CartItemView(item: Cart) {
                     {
                         Text(
                             "-",
-                            fontSize = 22.sp)
+                            fontSize = 22.sp
+                        )
                     }
                     Text(
                         "${item.quantity}", fontSize = 20.sp,
@@ -155,7 +171,7 @@ fun CartItemView(item: Cart) {
 
             }
 
-            IconButton(onClick = {  }) {
+            IconButton(onClick = { }) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Delete",

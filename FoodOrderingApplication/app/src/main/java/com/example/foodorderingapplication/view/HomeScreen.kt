@@ -14,11 +14,14 @@ import androidx.navigation.NavController
 @Composable
 fun HomeScreen(navController: NavController) {
     Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
-    Box(
-        modifier = Modifier.fillMaxSize().padding(paddingValues),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "🏠 Home Screen", fontSize = 24.sp)
-    }})
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "🏠 Home Screen", fontSize = 24.sp)
+        }
+    })
 }
 

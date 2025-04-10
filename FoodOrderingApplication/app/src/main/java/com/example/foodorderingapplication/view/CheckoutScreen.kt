@@ -4,12 +4,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,45 +26,79 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.models.Cart
+import com.example.foodorderingapplication.viewmodel.CartViewModel
 
 @Composable
-fun CheckoutScreen(navController: NavController) {
-    val subtotal = 19.2
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .verticalScroll(rememberScrollState())) {
-        // Header
-        HeaderSection("Checkout", navController)
+fun CheckoutScreen(viewModel: CartViewModel = viewModel(), navController: NavController) {
+    val cartItems by viewModel.cartItems.collectAsState()
+    val total by viewModel.total.collectAsState()
 
-        // Shipping, Delivery, Promos
-        ShippingDeliveryPromosSection(navController)
+    val subtotal = total + 2.0
 
-        // Items List
-        ItemsList()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7F7F7))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 120.dp)
+        ) {
+            // Header
+            HeaderSection("Checkout", navController)
 
-        // Order Summary
-        OrderSummary()
+            // Shipping, Delivery, Promos
+            ShippingDeliveryPromosSection(navController)
 
-        // Payment Method
-        PaymentMethod()
+            // Items List
+            ItemsList(cartItems)
 
-        // Subtotal & Place Order Button
-        SubtotalAndAddToCart("Checkout", subtotal, navController, "")
+            // Order Summary
+            OrderSummary()
+
+            // Payment Method
+            PaymentMethod()
+        }
+
+        // Subtotal & Button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(Color.White)
+        ) {
+            SubtotalAndButton(
+                title = "Place Order",
+                subtotal = subtotal,
+                navController = navController,
+                pageName = "payment"
+            )
+        }
     }
 }
 
@@ -70,6 +107,8 @@ fun ShippingDeliveryPromosSection(navController: NavController) {
     val showDialog = remember { mutableStateOf(false) }
     val selectedDate = remember { mutableStateOf("Shipping now") }
     val selectedTime = remember { mutableStateOf("") }
+    val showPromoDialog = remember { mutableStateOf(false) }
+    val selectedPromo = remember { mutableStateOf("Free Shipping") }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider()
@@ -84,9 +123,8 @@ fun ShippingDeliveryPromosSection(navController: NavController) {
         }
         HorizontalDivider()
 
-        ShippingRow("PROMOS", "Apply promo code") {
-            // Xử lý khi nhấn vào PROMOS
-            println("PROMOS clicked!")
+        ShippingRow("PROMOS", selectedPromo.value) {
+            showPromoDialog.value = true
         }
         HorizontalDivider()
 
@@ -95,6 +133,12 @@ fun ShippingDeliveryPromosSection(navController: NavController) {
             selectedDate.value = date
             selectedTime.value = time
             showDialog.value = false
+        }
+
+        // Hiển thị dialog chọn mã giảm giá
+        PromoDialog(showPromoDialog) { promo ->
+            showPromoDialog.value = false
+            selectedPromo.value = promo
         }
     }
 }
@@ -127,7 +171,7 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun ItemsList() {
+fun ItemsList(cartItems: List<Cart>) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -136,8 +180,7 @@ fun ItemsList() {
             .padding(16.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -146,34 +189,37 @@ fun ItemsList() {
             Text("PRICE", fontWeight = FontWeight.Bold)
         }
 
-        ItemRow(R.drawable.tteok, "Tteok", "Korean rice-cake.", "$10.99", 1)
-        ItemRow(R.drawable.hobakjuk, "Hobakjuk", "Pumpkin-porridge.", "$12.99", 1)
+        cartItems.forEach { cart ->
+            ItemRow(cart) // Chỉ truyền đối tượng Cart
+        }
     }
 }
 
 @Composable
-fun ItemRow(image: Int, title: String, description: String, price: String, quantity: Int) {
+fun ItemRow(cart: Cart) {
+    val context = LocalContext.current
+    val imageId = remember(cart.imageRes) {
+        context.resources.getIdentifier(cart.imageRes, "drawable", context.packageName)
+    }
     Row(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(id = image),
-            contentDescription = title,
+            painter = painterResource(id = imageId),
+            contentDescription = cart.name,
             modifier = Modifier
                 .size(60.dp)
                 .clip(RoundedCornerShape(8.dp))
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(description, fontSize = 14.sp)
-            Text("Quantity : $quantity", fontSize = 14.sp)
+            Text(cart.name, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Quantity: ${cart.quantity}", fontSize = 14.sp)
         }
 
-        Text(price, fontWeight = FontWeight.Bold)
+        Text("$${"%.2f".format(cart.price)}", fontWeight = FontWeight.Bold)
     }
 }
 
@@ -259,6 +305,9 @@ fun PaymentOption(image: Int, label: String, selected: Boolean) {
 
 @Composable
 fun DeliveryTimeDialog(showDialog: MutableState<Boolean>, onConfirm: (String, String) -> Unit) {
+    val selectedDate = remember { mutableStateOf("Today") }
+    val selectedTime = remember { mutableStateOf("Now") }
+
     if (showDialog.value) {
         AlertDialog(
             onDismissRequest = { showDialog.value = false },
@@ -287,14 +336,17 @@ fun DeliveryTimeDialog(showDialog: MutableState<Boolean>, onConfirm: (String, St
                         Text("Time", fontWeight = FontWeight.Bold)
                     }
                     HorizontalDivider()
-                    DeliveryOption("Today", "Now", onConfirm)
+                    DeliveryOption("Today", "Now", selectedDate, selectedTime)
                     HorizontalDivider()
-                    DeliveryOption("05/03/2025", "16:15", onConfirm)
+                    DeliveryOption("05/03/2025", "16:15", selectedDate, selectedTime)
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = { showDialog.value = false },
+                    onClick = {
+                        onConfirm(selectedDate.value, selectedTime.value)
+                        showDialog.value = false
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
                 ) {
@@ -306,15 +358,88 @@ fun DeliveryTimeDialog(showDialog: MutableState<Boolean>, onConfirm: (String, St
 }
 
 @Composable
-fun DeliveryOption(date: String, time: String, onConfirm: (String, String) -> Unit) {
+fun DeliveryOption(
+    date: String, time: String,
+    selectedDate: MutableState<String>,
+    selectedTime: MutableState<String>
+) {
+    val isSelected = selectedDate.value == date && selectedTime.value == time
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onConfirm(date, time) }
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .clickable {
+                selectedDate.value = date
+                selectedTime.value = time
+            }
+            .background(if (isSelected) Color(0xFFFFD500) else Color.Transparent) // Màu nền khi được chọn
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(date)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(date)
+        }
         Text(time)
     }
+}
+
+@Composable
+fun PromoDialog(showDialog: MutableState<Boolean>, onPromoSelected: (String) -> Unit) {
+    val promoOptions = listOf(
+        "Free Shipping",
+        "5% off for orders above 100K",
+        "10% off for orders above 200K",
+        "15% off for orders above 500K"
+    )
+    val selectedPromo = remember { mutableStateOf(promoOptions[0]) } // Mặc định là "Free Shipping"
+
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("Select Promo Code") },
+            text = {
+                Column {
+                    promoOptions.forEach { promo ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedPromo.value = promo
+                                }
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (selectedPromo.value == promo),
+                                onClick = { selectedPromo.value = promo }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(promo, fontSize = 16.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onPromoSelected(selectedPromo.value)
+                    showDialog.value = false
+                }) {
+                    Text("Apply")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog.value = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun Preview1() {
+    NavigationGraph()
 }

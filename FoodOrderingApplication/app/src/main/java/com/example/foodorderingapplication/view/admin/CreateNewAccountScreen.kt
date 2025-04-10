@@ -30,11 +30,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.view.AddShippingScreen
 
 @Composable
-fun CreateNewAccountScreen() {
+fun CreateNewAccountScreen(  navController: NavController) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -108,43 +109,4 @@ fun CreateNewAccountScreen() {
             }
         }
     }
-}
-
-@Composable
-fun CustomTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = label,
-            fontSize = 16.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Yellow,  // Background color when focused
-                unfocusedContainerColor = Color.White, // Background color when not focused
-                focusedIndicatorColor = Color.White, // Outline color when focused
-                unfocusedIndicatorColor = Color.Gray // Outline color when not focused
-
-            )
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CreateAccountPreview() {
-    CreateNewAccountScreen()
 }
