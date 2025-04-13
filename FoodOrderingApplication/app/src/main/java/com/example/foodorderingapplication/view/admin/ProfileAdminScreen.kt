@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAddAlt
@@ -32,9 +31,9 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.view.BottomNavBar
-import com.example.foodorderingapplication.view.BottomNavItem
-import com.example.foodorderingapplication.view.ProfileSettingsSection
-import com.example.foodorderingapplication.view.SettingOption
+import com.example.foodorderingapplication.model.BottomNavItem
+import com.example.foodorderingapplication.view.profile.ProfileSettingsSection
+import com.example.foodorderingapplication.view.profile.SettingOption
 
 @Composable
 fun ProfileAdminScreen(

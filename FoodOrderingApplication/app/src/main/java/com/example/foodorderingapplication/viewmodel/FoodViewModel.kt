@@ -1,18 +1,16 @@
 package com.example.foodorderingapplication.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.foodorderingapplication.models.Food
+import com.example.foodorderingapplication.model.FoodItem
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class FoodViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
 
-    private val _foods = MutableStateFlow<List<Food>>(emptyList())
-    val foods: StateFlow<List<Food>> = _foods
+    private val _foods = MutableStateFlow<List<FoodItem>>(emptyList())
+    val foods: StateFlow<List<FoodItem>> = _foods
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -39,8 +37,8 @@ class FoodViewModel : ViewModel() {
                 }
 
                 if (snapshot != null && !snapshot.isEmpty) {
-                    val foodList = snapshot.map { doc ->
-                        Food(
+                    val foodItemList = snapshot.map { doc ->
+                        FoodItem(
                             id = doc.id,
                             name = doc.getString("name") ?: "",
                             price = doc.getDouble("price") ?: 0.0,
@@ -49,7 +47,7 @@ class FoodViewModel : ViewModel() {
                             imageRes = doc.getString("imageUrl") ?: ""
                         )
                     }
-                    _foods.value = foodList
+                    _foods.value = foodItemList
                     _isError.value = false
                 } else {
                     // Nếu không có dữ liệu

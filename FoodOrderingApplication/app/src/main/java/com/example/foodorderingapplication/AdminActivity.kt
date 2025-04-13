@@ -8,8 +8,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.foodorderingapplication.view.BottomNavItem
+import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.view.admin.AddFoodScreen
+import com.example.foodorderingapplication.view.admin.AdminAccountScreen
 import com.example.foodorderingapplication.view.admin.CreateNewAccountScreen
 import com.example.foodorderingapplication.view.admin.EditFoodScreen
 import com.example.foodorderingapplication.view.admin.HomeAdminScreen
@@ -56,6 +57,7 @@ fun NavigationGraphAdmin() {
             ReviewDetailScreen(navController = navController, reviewId = reviewId)
         }
         composable("new_account") { CreateNewAccountScreen(navController = navController) }
+        composable("admin_account") { AdminAccountScreen(navController = navController) }
     }
 }
 

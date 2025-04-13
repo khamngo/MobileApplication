@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.foodorderingapplication.view.BottomNavItem
+import com.example.foodorderingapplication.model.BottomNavItem
 
 @Composable
 fun BottomNavBar(navController: NavController, items: List<BottomNavItem> =  listOf(

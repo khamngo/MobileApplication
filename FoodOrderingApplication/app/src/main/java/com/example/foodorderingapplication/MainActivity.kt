@@ -10,16 +10,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.foodorderingapplication.view.AddShippingScreen
-import com.example.foodorderingapplication.view.BottomNavItem
-import com.example.foodorderingapplication.view.CartScreen
-import com.example.foodorderingapplication.view.CategoryScreen
-import com.example.foodorderingapplication.view.CheckoutScreen
-import com.example.foodorderingapplication.view.FoodDetailScreen
-import com.example.foodorderingapplication.view.HomeScreen
-import com.example.foodorderingapplication.view.MenuScreen
-import com.example.foodorderingapplication.view.NotificationScreen
-import com.example.foodorderingapplication.view.ProfileScreen
+import com.example.foodorderingapplication.model.BottomNavItem
+import com.example.foodorderingapplication.view.profile.OrderDetailScreen
+import com.example.foodorderingapplication.view.home.HomeScreen
+import com.example.foodorderingapplication.view.menu.AddShippingScreen
+import com.example.foodorderingapplication.view.menu.CartScreen
+import com.example.foodorderingapplication.view.menu.CategoryScreen
+import com.example.foodorderingapplication.view.menu.CheckoutScreen
+import com.example.foodorderingapplication.view.menu.FoodDetailScreen
+import com.example.foodorderingapplication.view.menu.MenuScreen
+import com.example.foodorderingapplication.view.notification.NotificationScreen
+import com.example.foodorderingapplication.view.profile.MyAccountScreen
+import com.example.foodorderingapplication.view.profile.MyReviewScreen
+import com.example.foodorderingapplication.view.profile.OrderListScreen
+import com.example.foodorderingapplication.view.profile.PaymentMethodScreen
+import com.example.foodorderingapplication.view.profile.ProfileScreen
+import com.example.foodorderingapplication.view.profile.ReviewScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +41,7 @@ class MainActivity : ComponentActivity() {
 fun NavigationGraph() {
     val navController = rememberNavController()
 
-    NavHost(navController, startDestination = BottomNavItem.Profile.route) {
+    NavHost(navController, startDestination = "order_detail") {
         composable(BottomNavItem.Home.route) { HomeScreen(navController = navController) }
         composable(BottomNavItem.Menu.route) { MenuScreen(navController = navController) }
         composable(BottomNavItem.Notification.route) { (NotificationScreen(navController = navController)) }
@@ -56,6 +62,13 @@ fun NavigationGraph() {
             val foodId = backStackEntry.arguments?.getString("foodId")
             FoodDetailScreen(navController = navController, foodId = foodId)
         }
+
+        composable("order") { OrderListScreen(navController = navController) }
+        composable("order_detail") { OrderDetailScreen(navController = navController) }
+        composable("my_account") { MyAccountScreen(navController = navController) }
+        composable("payment_method") { PaymentMethodScreen(navController = navController) }
+        composable("my_review") { MyReviewScreen(navController = navController) }
+        composable("review") { ReviewScreen(navController = navController) }
 
     }
 }

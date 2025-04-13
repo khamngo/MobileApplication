@@ -2,7 +2,7 @@ package com.example.foodorderingapplication.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.foodorderingapplication.models.Cart
+import com.example.foodorderingapplication.model.CartItem
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,8 +12,8 @@ class CartViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
 
     // LiveData để lưu danh sách các món trong giỏ hàng
-    private val _cartItems = MutableStateFlow<List<Cart>>(emptyList())
-    val cartItems: StateFlow<List<Cart>> get() = _cartItems
+    private val _cartItemItems = MutableStateFlow<List<CartItem>>(emptyList())
+    val cartItemItems: StateFlow<List<CartItem>> get() = _cartItemItems
 
     // LiveData để lưu tổng tiền
     private val _total = MutableStateFlow<Double>(0.0)
@@ -36,7 +36,7 @@ class CartViewModel : ViewModel() {
                     }
                     if (snapshot != null) {
                         val items = snapshot.map { doc ->
-                            Cart(
+                            CartItem(
                                 foodId = doc.id,
                                 name = doc.getString("name") ?: "",
                                 price = doc.getDouble("price") ?: 0.0,
@@ -44,7 +44,7 @@ class CartViewModel : ViewModel() {
                                 imageRes = doc.getString("imageUrl") ?: ""
                             )
                         }
-                        _cartItems.value = items
+                        _cartItemItems.value = items
                         updateCartTotal(userId) // Cập nhật tổng tiền khi danh sách thay đổi
                     }
                 }
@@ -52,17 +52,17 @@ class CartViewModel : ViewModel() {
     }
 
     // Hàm thêm món vào giỏ hàng
-    fun addToCart(userId: String, cart: Cart) {
+    fun addToCart(userId: String, cartItem: CartItem) {
         val cartItemData = hashMapOf(
-            "name" to cart.name,
-            "price" to cart.price,
-            "quantity" to cart.quantity,
-            "imageUrl" to cart.imageRes
+            "name" to cartItem.name,
+            "price" to cartItem.price,
+            "quantity" to cartItem.quantity,
+            "imageUrl" to cartItem.imageRes
         )
 
         viewModelScope.launch {
             db.collection("carts").document(userId)
-                .collection("items").document(cart.foodId)
+                .collection("items").document(cartItem.foodId)
                 .set(cartItemData)
                 .addOnSuccessListener {
                     println("Đã thêm vào giỏ hàng!")

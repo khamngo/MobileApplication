@@ -59,10 +59,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.NavigationGraph
-import com.example.foodorderingapplication.models.Food
+import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.BottomNavBar
-import com.example.foodorderingapplication.view.BottomNavItem
-import com.example.foodorderingapplication.view.TopBar
+import com.example.foodorderingapplication.model.BottomNavItem
+import com.example.foodorderingapplication.view.menu.TopBar
 import com.example.foodorderingapplication.viewmodel.FoodViewModel
 import kotlin.math.roundToInt
 
@@ -72,7 +72,7 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
     val isLoading by viewModel.isLoading.collectAsState(initial = true) // Thêm trạng thái loading
     val isError by viewModel.isError.collectAsState(initial = false)     // Thêm trạng thái lỗi nếu có
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedFoodToDelete by remember { mutableStateOf<Food?>(null) }
+    var selectedFoodItemToDelete by remember { mutableStateOf<FoodItem?>(null) }
 
     val bottomNavItems = listOf(
         BottomNavItem.Home,
@@ -123,21 +123,21 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
                             item { TopBar() }
                             items(foodList) { food ->
                                 FoodCard(
-                                    food = food,
+                                    foodItem = food,
                                     onEdit = { navController.navigate("edit_food/${food.id}") },
-                                    onDelete = {            selectedFoodToDelete = food
+                                    onDelete = {            selectedFoodItemToDelete = food
                                         showDeleteDialog = true }
                                 )
                             }
                         }
-                        if (showDeleteDialog && selectedFoodToDelete != null) {
+                        if (showDeleteDialog && selectedFoodItemToDelete != null) {
                             AlertDialog(
                                 onDismissRequest = { showDeleteDialog = false },
                                 title = { Text("Delete Confirmation") },
-                                text = { Text("Are you sure you want to delete \"${selectedFoodToDelete?.name}\"?") },
+                                text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
                                 confirmButton = {
                                     TextButton(onClick = {
-                                        selectedFoodToDelete?.let { food ->
+                                        selectedFoodItemToDelete?.let { food ->
                                             viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
                                         }
                                         showDeleteDialog = false
@@ -153,14 +153,14 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
                             )
                         }
 
-                        if (showDeleteDialog && selectedFoodToDelete != null) {
+                        if (showDeleteDialog && selectedFoodItemToDelete != null) {
                             AlertDialog(
                                 onDismissRequest = { showDeleteDialog = false },
                                 title = { Text("Delete Confirmation") },
-                                text = { Text("Are you sure you want to delete \"${selectedFoodToDelete?.name}\"?") },
+                                text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
                                 confirmButton = {
                                     TextButton(onClick = {
-                                        selectedFoodToDelete?.let { food ->
+                                        selectedFoodItemToDelete?.let { food ->
                                             viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
                                         }
                                         showDeleteDialog = false
@@ -191,10 +191,10 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun FoodCard(food: Food, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
     val context = LocalContext.current
-    val imageId = remember(food.imageRes) {
-        context.resources.getIdentifier(food.imageRes, "drawable", context.packageName)
+    val imageId = remember(foodItem.imageRes) {
+        context.resources.getIdentifier(foodItem.imageRes, "drawable", context.packageName)
     }
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -210,7 +210,7 @@ fun FoodCard(food: Food, onEdit: () -> Unit, onDelete: () -> Unit) {
         ) {
             Image(
                 painter = painterResource(id = imageId),
-                contentDescription = food.name,
+                contentDescription = foodItem.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(80.dp)
@@ -222,14 +222,14 @@ fun FoodCard(food: Food, onEdit: () -> Unit, onDelete: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                Text(text = food.name, fontWeight = FontWeight.Bold)
+                Text(text = foodItem.name, fontWeight = FontWeight.Bold)
                 Text(
-                    text = "$${String.format("%.2f", food.price)}",
+                    text = "$${String.format("%.2f", foodItem.price)}",
                     color = Color.Red,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(text = "Category: ${food.name}")
-                Text(text = "Description: ${food.description}")
+                Text(text = "Category: ${foodItem.name}")
+                Text(text = "Description: ${foodItem.description}")
             }
 
             Column(
