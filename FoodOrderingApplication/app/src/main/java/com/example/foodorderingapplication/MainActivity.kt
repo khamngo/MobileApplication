@@ -11,8 +11,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.foodorderingapplication.model.BottomNavItem
-import com.example.foodorderingapplication.view.profile.OrderDetailScreen
 import com.example.foodorderingapplication.view.home.HomeScreen
+import com.example.foodorderingapplication.view.home.IntroScreen
+import com.example.foodorderingapplication.view.home.LoginScreen
+import com.example.foodorderingapplication.view.home.SignUpScreen
 import com.example.foodorderingapplication.view.menu.AddShippingScreen
 import com.example.foodorderingapplication.view.menu.CartScreen
 import com.example.foodorderingapplication.view.menu.CategoryScreen
@@ -22,6 +24,7 @@ import com.example.foodorderingapplication.view.menu.MenuScreen
 import com.example.foodorderingapplication.view.notification.NotificationScreen
 import com.example.foodorderingapplication.view.profile.MyAccountScreen
 import com.example.foodorderingapplication.view.profile.MyReviewScreen
+import com.example.foodorderingapplication.view.profile.OrderDetailScreen
 import com.example.foodorderingapplication.view.profile.OrderListScreen
 import com.example.foodorderingapplication.view.profile.PaymentMethodScreen
 import com.example.foodorderingapplication.view.profile.ProfileScreen
@@ -40,12 +43,26 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun NavigationGraph() {
     val navController = rememberNavController()
-
-    NavHost(navController, startDestination = "order_detail") {
+    NavHost(navController, startDestination =BottomNavItem.Home.route) {
         composable(BottomNavItem.Home.route) { HomeScreen(navController = navController) }
         composable(BottomNavItem.Menu.route) { MenuScreen(navController = navController) }
         composable(BottomNavItem.Notification.route) { (NotificationScreen(navController = navController)) }
         composable(BottomNavItem.Profile.route) { ProfileScreen(navController = navController) }
+
+        composable("intro") {
+            IntroScreen {
+                navController.navigate("login") {
+                    popUpTo("intro") { inclusive = true }
+                }
+            }
+        }
+        composable("login") { LoginScreen(navController = navController) }
+        composable("sign_up") {
+            SignUpScreen(
+                onBackClick = { navController.popBackStack() },
+                onSignInClick = { navController.navigate("sign_in_screen") }
+            )
+        }
 
         composable("cart") { CartScreen(navController = navController) }
         composable("checkout") { CheckoutScreen(navController = navController) }

@@ -176,7 +176,7 @@ fun RestaurantSelectionSection(restaurantItems: List<RestaurantItem>) {
     ) {
         Text(
             "Choose a restaurant",
-            fontSize = 18.sp,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 8.dp)
         )

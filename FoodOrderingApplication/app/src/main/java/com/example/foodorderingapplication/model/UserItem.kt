@@ -4,7 +4,9 @@ data class UserItem(
     val name: String,
     val phone: String,
     val address: String,
-    val email: String
+    val email: String,
+    val photoUrl: String,
+    val birthDate: String
 )
 
 //fun saveUserInfo(userId: String, user: User) {

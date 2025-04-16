@@ -46,10 +46,23 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("com.patrykandpatrick.vico:compose:1.9.0")
 
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    // Import the BoM for the Firebase platform
+    implementation(platform("com.google.firebase:firebase-bom:33.11.0"))
+
+    // Add the dependency for the Firebase Authentication library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation("com.google.android.gms:play-services-auth:21.1.1")
+    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
+
+    // Add the dependency for the Firebase SDK for Google Analytics
     implementation("com.google.firebase:firebase-analytics")
+
+    // Also add the dependencies for the Credential Manager libraries and specify their versions
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
     implementation("com.google.firebase:firebase-firestore:24.10.3")
-    implementation("com.google.firebase:firebase-auth:22.3.1")
 
     implementation("com.google.accompanist:accompanist-pager:0.32.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.0")

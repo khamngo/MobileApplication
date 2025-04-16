@@ -122,7 +122,7 @@ fun TopBar() {
             horizontalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.icon_title), // Thay bằng ID hình của bạn
+                painter = painterResource(id = R.drawable.icon_title),
                 contentDescription = "Logo",
                 modifier = Modifier
                     .size(80.dp)

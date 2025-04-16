@@ -19,18 +19,6 @@ fun CustomTextField(
     onValueChange: (String) -> Unit,
     label: String
 ) {
-//    Column(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(16.dp)
-//    ) {
-//        Text(
-//            text = label,
-//            fontSize = 18.sp,
-//            color = Color.Black,
-//            modifier = Modifier.padding(bottom = 4.dp)
-//        )
-
     OutlinedTextField(
         value = value,
         label = { Text(text = label) },
@@ -49,6 +37,5 @@ fun CustomTextField(
 
         )
     )
-//    }
 }
 
