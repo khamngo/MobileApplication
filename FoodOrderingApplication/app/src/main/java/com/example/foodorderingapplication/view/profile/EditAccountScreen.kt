@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,21 +32,24 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.admin.CustomTextField
+import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
 
 @Composable
-fun MyAccountScreen(  navController: NavController) {
-    var username by remember { mutableStateOf("Ngo Minh Kham") }
-    var email by remember { mutableStateOf("ngominhkham25@gmail.com") }
-    var phone by remember { mutableStateOf("+ 84 524168234") }
-    var password by remember { mutableStateOf("ngominhkham25") }
-    var confirmPassword by remember { mutableStateOf("ngominhkham25") }
+fun MyAccountScreen(
+    navController: NavController,
+    viewModel: MyAccountViewModel = viewModel()
+) {
+    val userState by viewModel.user.collectAsState()
+
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Header
         HeaderSection("My Account", navController)
 
         Column(
@@ -56,21 +60,21 @@ fun MyAccountScreen(  navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CustomTextField(
-                value = username,
-                onValueChange = { username = it },
+                value = userState.username,
+                onValueChange = { viewModel.updateUsername(it) },
                 label = "Username"
             )
 
             CustomTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = userState.email,
+                onValueChange = { viewModel.updateEmail(it) },
                 label = "Email"
             )
 
             CustomTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = "Email"
+                value = userState.phone ?: "",
+                onValueChange = { viewModel.updatePhone(it) },
+                label = "Phone"
             )
 
             PasswordField(label = "Password", password = password, onPasswordChange = { password = it })
@@ -79,8 +83,17 @@ fun MyAccountScreen(  navController: NavController) {
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { /* Xử lý thanh toán */ },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)), // Màu vàng
+                onClick = {
+                    if (password == confirmPassword) {
+                        viewModel.saveChanges(
+                            onSuccess = { /* thông báo thành công */ },
+                            onFailure = { error -> /* thông báo lỗi */ }
+                        )
+                    } else {
+                        // thông báo lỗi xác nhận mật khẩu
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(52.dp),
                 shape = RoundedCornerShape(10.dp)
             ) {
@@ -116,9 +129,9 @@ fun PasswordField(
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp),
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Yellow,
+            focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
-            focusedIndicatorColor = Color.White,
+            focusedIndicatorColor = Color.Gray,
             unfocusedIndicatorColor = Color.Gray
         )
     )

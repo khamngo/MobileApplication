@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,16 +52,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.FoodItem
@@ -117,26 +117,28 @@ fun TopBar() {
             .padding(16.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Image(
                 painter = painterResource(id = R.drawable.icon_title),
                 contentDescription = "Logo",
                 modifier = Modifier
-                    .size(80.dp)
-                    .padding(0.dp)
+                    .size(60.dp) // Tự điều chỉnh tùy kích thước bạn muốn
+                    .padding(end = 4.dp),
+                contentScale = ContentScale.Crop // Tự scale hình cho vừa vùng hiển thị
             )
             Text(
                 text = "KFoods",
                 fontWeight = FontWeight.Bold,
                 fontSize = 36.sp,
                 fontFamily = MograFont,
-                color = Color.White
+                color = Color.White,
             )
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
         SearchBar()
     }
 }
@@ -164,7 +166,13 @@ fun SearchBar() {
         singleLine = true,
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+            // ✅ Nền trắng
+            unfocusedContainerColor = Color.White,
+            focusedContainerColor = Color.White,
+            disabledContainerColor = Color.White
         )
     )
 }
@@ -312,7 +320,8 @@ fun FoodListSection(
     viewModel: FoodViewModel = viewModel(),
     navController: NavController,
 ) {
-    val foods by viewModel.foods.collectAsState()
+    val explore by viewModel.exploreFoods.collectAsState()
+    val bestseller by viewModel.bestsellerFoods.collectAsState()
 
     Column(modifier = Modifier.padding(16.dp))
     {
@@ -324,9 +333,9 @@ fun FoodListSection(
                 .padding(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            items(foods) { food ->
+            items(bestseller) { food ->
                 FoodItem(food, onClick = {
-                    navController.navigate("detail/${food.id}")
+                    navController.navigate("food_detail/${food.id}")
                 })
             }
         }
@@ -340,9 +349,9 @@ fun FoodListSection(
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            foods.forEach { food ->
+            explore.forEach { food ->
                 LargeFoodItem(food, onClick = {
-                    navController.navigate("detail/${food.id}")
+                    navController.navigate("food_detail/${food.id}")
                 })
             }
         }
@@ -351,11 +360,6 @@ fun FoodListSection(
 
 @Composable
 fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
-    val context = LocalContext.current
-    val imageId = remember(foodItem.imageRes) {
-        context.resources.getIdentifier(foodItem.imageRes, "drawable", context.packageName)
-    }
-
     Card(
         modifier = Modifier
             .width(160.dp)
@@ -367,27 +371,38 @@ fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
         Column(
             modifier = Modifier
                 .background(Color.White)
+                .fillMaxSize()
         ) {
-            Image(
-                painter = painterResource(id = imageId),
+            AsyncImage(
+                model = foodItem.imageUrl,
                 contentDescription = foodItem.name,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .fillMaxHeight(0.75f)
+                    .height(140.dp)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop
+                placeholder = painterResource(id = R.drawable.placeholder),
+                error = painterResource(id = R.drawable.image_error)
             )
+
             Text(
                 text = foodItem.name,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(4.dp),
-                fontSize = 14.sp
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .padding(top = 6.dp),
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
-                    .padding(6.dp)
+                    .padding(horizontal = 8.dp)
                     .fillMaxWidth()
             ) {
                 Text(
@@ -403,7 +418,11 @@ fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
                         tint = Color.Yellow,
                         modifier = Modifier.size(16.dp)
                     )
-                    Text(foodItem.rating.toString(), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = foodItem.rating.toString(),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -412,25 +431,23 @@ fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
 
 @Composable
 fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
-    val context = LocalContext.current
-    val imageId = remember(foodItem.imageRes) {
-        context.resources.getIdentifier(foodItem.imageRes, "drawable", context.packageName)
-    }
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
     ) {
         Box {
-            Image(
-                painter = painterResource(id = imageId),
+            AsyncImage(
+                model = foodItem.imageUrl,
                 contentDescription = foodItem.name,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .height(180.dp)
+                    .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onClick() },
-                contentScale = ContentScale.Crop
+                placeholder = painterResource(id = R.drawable.placeholder),
+                error = painterResource(id = R.drawable.image_error)
             )
 
             Box(
@@ -490,7 +507,6 @@ fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
             }
         }
     }
-
 }
 
 @Composable
@@ -556,5 +572,5 @@ fun DraggableCartIcon(viewModel: CartViewModel = viewModel(), navController: Nav
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    NavigationGraph()
+    TopBar()
 }

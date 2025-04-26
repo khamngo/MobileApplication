@@ -86,11 +86,11 @@ fun OrderDetailScreen(navController: NavController) {
                 .padding(16.dp)
         ) {
             val viewModel: OrderViewModel = viewModel()
-            OrderActionButton(
-                orderStatus = viewModel.orderStatus,
-                onCancel = { viewModel.cancelOrder() },
-                onBuyAgain = { viewModel.buyAgain() }
-            )
+//            OrderActionButton(
+//                orderStatus = viewModel.orderStatus,
+//                onCancel = { viewModel.cancelOrder() },
+//                onBuyAgain = { viewModel.buyAgain() }
+//            )
 
         }
     }
@@ -190,13 +190,13 @@ fun OrderDetailContent() {
                 .padding(vertical = 12.dp)
                 .fillMaxWidth()
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.gimbap),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
+//            Image(
+//                painter = painterResource(id = R.drawable.gimbap),
+//                contentDescription = null,
+//                modifier = Modifier
+//                    .size(60.dp)
+//                    .clip(RoundedCornerShape(8.dp))
+//            )
 
             Spacer(modifier = Modifier.width(14.dp))
 
@@ -236,12 +236,6 @@ fun OrderInfoRow(label: String, value: String) {
         Text(label)
         Text(value)
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview2() {
-    NavigationGraph()
 }
 
 @Composable

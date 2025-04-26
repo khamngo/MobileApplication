@@ -69,8 +69,8 @@ import kotlin.math.roundToInt
 @Composable
 fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = viewModel()) {
     val foodList by viewModel.foods.collectAsState(initial = emptyList())
-    val isLoading by viewModel.isLoading.collectAsState(initial = true) // Thêm trạng thái loading
-    val isError by viewModel.isError.collectAsState(initial = false)     // Thêm trạng thái lỗi nếu có
+    val isLoading by viewModel.isLoading.collectAsState(initial = true)
+    val isError by viewModel.isError.collectAsState(initial = false)
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedFoodItemToDelete by remember { mutableStateOf<FoodItem?>(null) }
 
@@ -193,8 +193,8 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
 @Composable
 fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
     val context = LocalContext.current
-    val imageId = remember(foodItem.imageRes) {
-        context.resources.getIdentifier(foodItem.imageRes, "drawable", context.packageName)
+    val imageId = remember(foodItem.imageUrl) {
+        context.resources.getIdentifier(foodItem.imageUrl, "drawable", context.packageName)
     }
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),

@@ -1,8 +1,11 @@
 package com.example.foodorderingapplication
 
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavType
@@ -15,12 +18,14 @@ import com.example.foodorderingapplication.view.home.HomeScreen
 import com.example.foodorderingapplication.view.home.IntroScreen
 import com.example.foodorderingapplication.view.home.LoginScreen
 import com.example.foodorderingapplication.view.home.SignUpScreen
+import com.example.foodorderingapplication.view.home.ThanksScreen
 import com.example.foodorderingapplication.view.menu.AddShippingScreen
 import com.example.foodorderingapplication.view.menu.CartScreen
 import com.example.foodorderingapplication.view.menu.CategoryScreen
 import com.example.foodorderingapplication.view.menu.CheckoutScreen
 import com.example.foodorderingapplication.view.menu.FoodDetailScreen
 import com.example.foodorderingapplication.view.menu.MenuScreen
+import com.example.foodorderingapplication.view.menu.ThankYouScreen
 import com.example.foodorderingapplication.view.notification.NotificationScreen
 import com.example.foodorderingapplication.view.profile.MyAccountScreen
 import com.example.foodorderingapplication.view.profile.MyReviewScreen
@@ -31,6 +36,7 @@ import com.example.foodorderingapplication.view.profile.ProfileScreen
 import com.example.foodorderingapplication.view.profile.ReviewScreen
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        enableEdgeToEdge()
@@ -40,22 +46,20 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavigationGraph() {
     val navController = rememberNavController()
-    NavHost(navController, startDestination =BottomNavItem.Home.route) {
+    NavHost(navController, startDestination = "intro") {
         composable(BottomNavItem.Home.route) { HomeScreen(navController = navController) }
         composable(BottomNavItem.Menu.route) { MenuScreen(navController = navController) }
         composable(BottomNavItem.Notification.route) { (NotificationScreen(navController = navController)) }
         composable(BottomNavItem.Profile.route) { ProfileScreen(navController = navController) }
 
         composable("intro") {
-            IntroScreen {
-                navController.navigate("login") {
-                    popUpTo("intro") { inclusive = true }
-                }
-            }
+            IntroScreen(navController = navController)
         }
+
         composable("login") { LoginScreen(navController = navController) }
         composable("sign_up") {
             SignUpScreen(
@@ -73,7 +77,7 @@ fun NavigationGraph() {
         }
 
         composable(
-            route = "detail/{foodId}",
+            route = "food_detail/{foodId}",
             arguments = listOf(navArgument("foodId") { type = NavType.StringType })
         ) { backStackEntry ->
             val foodId = backStackEntry.arguments?.getString("foodId")
@@ -85,11 +89,12 @@ fun NavigationGraph() {
         composable("my_account") { MyAccountScreen(navController = navController) }
         composable("payment_method") { PaymentMethodScreen(navController = navController) }
         composable("my_review") { MyReviewScreen(navController = navController) }
-        composable("review") { ReviewScreen(navController = navController) }
+        composable("thank_you") { ThankYouScreen(navController = navController) }
 
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {

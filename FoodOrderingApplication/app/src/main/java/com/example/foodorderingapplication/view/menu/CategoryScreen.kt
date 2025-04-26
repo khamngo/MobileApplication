@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Tab
@@ -29,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -39,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.FoodItem
@@ -48,7 +53,8 @@ import com.example.foodorderingapplication.viewmodel.FoodViewModel
 @Composable
 fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavController, name: String) {
     var selectedTabIndex by remember { mutableIntStateOf(if (name == "popular") 0 else 1) }
-    val foods by viewModel.foods.collectAsState()
+    val popular by viewModel.popularFoods.collectAsState()
+    val deal by viewModel.dealFoods.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -142,14 +148,14 @@ fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavCon
         LazyColumn(modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (selectedTabIndex == 0) {
-                item { Text("Popular", fontWeight = FontWeight.Bold, fontSize = 18.sp) }
-                items(foods) { food ->
-                    FoodItems(food, onClick = { navController.navigate("detail/${food.id}") })
+                items(popular) { food ->
+                    FoodItems(food, onClick = { navController.navigate("food_detail/${food.id}") })
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                 }
             } else {
-                item { Text("Deal", fontWeight = FontWeight.Bold, fontSize = 18.sp) }
-                items(foods) { food ->
-                    FoodItems(food, onClick = { navController.navigate("detail/${food.id}") })
+                items(deal) { food ->
+                    FoodItems(food, onClick = { navController.navigate("food_detail/${food.id}") })
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                 }
             }
         }
@@ -158,20 +164,22 @@ fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavCon
 
 @Composable
 fun FoodItems(foodItem: FoodItem, onClick: () -> Unit) {
-    val context = LocalContext.current
-    val imageId = remember(foodItem.imageRes) {
-        context.resources.getIdentifier(foodItem.imageRes, "drawable", context.packageName)
-    }
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
        .clickable{onClick()}
     ) {
-        Image(
-            painter = painterResource(id = imageId),
-            contentDescription = "Image",
-            modifier = Modifier.size(80.dp), contentScale = ContentScale.Crop
+        AsyncImage(
+            model = foodItem.imageUrl,
+            contentDescription = foodItem.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(80.dp)
+                .clip(RoundedCornerShape(4.dp)),
+            placeholder = painterResource(id = R.drawable.placeholder),
+            error = painterResource(id = R.drawable.image_error)
         )
         Column(
             verticalArrangement = Arrangement.spacedBy(6.dp),

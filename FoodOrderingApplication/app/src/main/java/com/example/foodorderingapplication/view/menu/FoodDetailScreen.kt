@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.menu
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -32,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -41,30 +45,38 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.model.CartItem
 import com.example.foodorderingapplication.view.SubtotalAndButton
+import com.example.foodorderingapplication.viewmodel.CartViewModel
+import com.example.foodorderingapplication.viewmodel.FoodDetailViewModel
 import com.example.foodorderingapplication.viewmodel.FoodViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun FoodDetailScreen(navController: NavHostController, foodId: String?, viewModel: FoodViewModel = viewModel()) {
-    var selectedPortion by remember { mutableStateOf("8") }
-    var quantity by remember { mutableIntStateOf(1) }
-    var selectedDrink by remember { mutableStateOf("Fanta") }
-    var instructions by remember { mutableStateOf("") }
+fun FoodDetailScreen(
+    navController: NavHostController,
+    foodId: String?,
+    viewModel: FoodDetailViewModel = viewModel(),
+    cartViewModel: CartViewModel = viewModel()
+) {
+    val foodDetail by viewModel.foodDetail.collectAsState()
 
     val portionPrices = mapOf("6" to 10.0, "8" to 12.0, "10" to 14.0).toList()
-    val drinkPrices = mapOf("Coca Cola" to 0.5, "Fanta" to 0.5, "Pepsi" to 0.0).toList()
+    val drinkPrices = mapOf("Pepsi" to 0.0, "Coca Cola" to 0.5, "Fanta" to 0.5).toList()
+
+    val selectedPortion = viewModel.selectedPortion.value
+    val quantity = viewModel.quantity.intValue
+    val selectedDrink = viewModel.selectedDrink.value
+    val instructions = viewModel.instructions.value
 
     val subtotal =
         (portionPrices.find { it.first == selectedPortion }?.second ?: 0.0) * quantity +
                 (drinkPrices.find { it.first == selectedDrink }?.second ?: 0.0)
 
-    val foods by viewModel.foods.collectAsState()
-    val food = foods.find { it.id == foodId }
-
-    val context = LocalContext.current
-    val imageId = remember(food?.imageRes) {
-        context.resources.getIdentifier(food?.imageRes, "drawable", context.packageName)
+    LaunchedEffect(foodId) {
+        foodId?.let { viewModel.fetchFoodById(it) }
     }
 
     Box(
@@ -72,75 +84,30 @@ fun FoodDetailScreen(navController: NavHostController, foodId: String?, viewMode
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
     ) {
-        food?.let {
+        foodDetail?.let {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = 120.dp)
             ) {
-                Box(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Image(
-                        painter = painterResource(id = imageId),
-                        contentDescription = "Food Image",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentScale = ContentScale.Crop
-                    )
+                FoodHeaderSection(
+                    imageUrl = it.imageUrl,
+                    name = it.name,
+                    navController = navController
+                )
 
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp)
-                            .matchParentSize()
-                            .align(Alignment.TopStart)
-                    ) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_arrow_back),
-                                contentDescription = "Arrow back",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        IconButton(onClick = { }) {
-                            Icon(
-                                imageVector = Icons.Filled.FavoriteBorder,
-                                contentDescription = "FavoriteBorder",
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = it.name,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(16.dp)
-                    )
-                }
-
-                // Portion Section
                 Column(modifier = Modifier.padding(16.dp)) {
-                    PortionSelection(portionPrices, selectedPortion) { selectedPortion = it }
-                    QuantitySelector(quantity) { quantity = it }
-                    ExtraDrinksSelection(drinkPrices, selectedDrink) { selectedDrink = it }
-                    InstructionsInput(instructions) { instructions = it }
+                    PortionSelection(portionPrices, selectedPortion) { viewModel.updatePortion(it) }
+                    QuantitySelector(quantity) { viewModel.updateQuantity(it) }
+                    ExtraDrinksSelection(drinkPrices, selectedDrink) { viewModel.updateDrink(it) }
+                    InstructionsInput(instructions) { viewModel.updateInstructions(it) }
                 }
             }
-        }?: run {
+        } ?: run {
             Text("Không tìm thấy món ăn!", modifier = Modifier.padding(16.dp))
         }
 
-        // Subtotal & Button
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,15 +115,89 @@ fun FoodDetailScreen(navController: NavHostController, foodId: String?, viewMode
                 .background(Color.White)
         ) {
             SubtotalAndButton(
-                "Add to cart",
+                title = "Add to cart",
                 subtotal = subtotal,
                 navController = navController,
-                "cart"
+                pageName = "cart",
+                onButtonClick = {
+                    foodDetail?.let {
+                        cartViewModel.addToCart(
+                            cartItem = CartItem(
+                                foodId = it.id,
+                                name = it.name,
+                                imageUrl = it.imageUrl,
+                                price = subtotal,
+                                quantity = quantity,
+                                portion = selectedPortion,
+                                drink = selectedDrink,
+                                instructions = instructions
+                            )
+                        )
+                    }
+                }
             )
         }
     }
 }
 
+@Composable
+fun FoodHeaderSection(
+    imageUrl: String,
+    name: String,
+    navController: NavHostController
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .height(200.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(4.dp)),
+            placeholder = painterResource(id = R.drawable.placeholder),
+            error = painterResource(id = R.drawable.image_error)
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
+                .matchParentSize()
+                .align(Alignment.TopStart)
+        ) {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrow_back),
+                    contentDescription = "Arrow back",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            IconButton(onClick = { /* TODO: handle favorite */ }) {
+                Icon(
+                    imageVector = Icons.Filled.FavoriteBorder,
+                    contentDescription = "FavoriteBorder",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+
+        Text(
+            text = name,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp)
+        )
+    }
+}
 
 @Composable
 fun PortionSelection(

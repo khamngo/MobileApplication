@@ -18,26 +18,46 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.ui.theme.MograFont
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 
 @Composable
-fun IntroScreen(onFinished: () -> Unit = {}) {
+fun IntroScreen(navController: NavController) {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val context = LocalContext.current
+
+    // Chỉ chạy một lần
     LaunchedEffect(Unit) {
-        delay(2000)
-        onFinished()
+        delay(2000) // Delay splash screen 2s
+        if (currentUser != null) {
+            // Đã đăng nhập → Home
+            navController.navigate(BottomNavItem.Home.route) {
+                popUpTo("intro") { inclusive = true }
+            }
+        } else {
+            // Chưa đăng nhập → Login
+            navController.navigate("login") {
+                popUpTo("intro") { inclusive = true }
+            }
+        }
     }
+
+    // UI hiển thị splash
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         Image(
             painter = painterResource(id = R.drawable.splash_screen),
@@ -47,8 +67,7 @@ fun IntroScreen(onFinished: () -> Unit = {}) {
         )
 
         Box(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -65,9 +84,8 @@ fun IntroScreen(onFinished: () -> Unit = {}) {
                     Image(
                         painter = painterResource(id = R.drawable.icon_title),
                         contentDescription = "Logo",
-                        modifier = Modifier
-                            .size(200.dp)
-                            .padding(0.dp)
+                        modifier = Modifier.size(140.dp),
+                        contentScale = ContentScale.Crop
                     )
                     Text(
                         text = "KFoods",
@@ -88,7 +106,6 @@ fun IntroScreen(onFinished: () -> Unit = {}) {
                 )
             }
         }
-
     }
 }
 

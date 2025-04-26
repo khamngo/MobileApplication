@@ -103,14 +103,14 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
                     }
                 }
 
-                Image(
-                    painter = painterResource(id = R.drawable.hobakjuk),
-                    contentDescription = "Sample Image",
-                    modifier = Modifier
-                        .size(240.dp, 180.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
+//                Image(
+//                    painter = painterResource(id = R.drawable.hobakjuk),
+//                    contentDescription = "Sample Image",
+//                    modifier = Modifier
+//                        .size(240.dp, 180.dp)
+//                        .clip(RoundedCornerShape(12.dp)),
+//                    contentScale = ContentScale.Crop
+//                )
             }
 
             // ⬇️ Hiển thị ảnh nếu có URL

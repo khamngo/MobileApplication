@@ -14,16 +14,17 @@ import androidx.navigation.NavController
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.profile.OrderItemCard
 import com.example.foodorderingapplication.model.OrderItem
+import com.example.foodorderingapplication.model.OrderItem1
 
 @Composable
 fun OrderListScreen(navController: NavController) {
     val orders = listOf(
-        OrderItem(1, "Tteok", "3 April, 2025", "Preparing"),
-        OrderItem(2, "Tteok", "5 April, 2025", "Completed"),
-        OrderItem(3, "Tteok", "10 April, 2025", "Cancelled"),
-        OrderItem(4, "Tteok", "15 April, 2025", "Completed"),
-        OrderItem(5, "Tteok", "20 April, 2025", "Completed"),
-        OrderItem(6, "Tteok", "25 April, 2025", "Cancelled"),
+        OrderItem1(1, "Tteok", "3 April, 2025", "Preparing"),
+        OrderItem1(2, "Tteok", "5 April, 2025", "Completed"),
+        OrderItem1(3, "Tteok", "10 April, 2025", "Cancelled"),
+        OrderItem1(4, "Tteok", "15 April, 2025", "Completed"),
+        OrderItem1(5, "Tteok", "20 April, 2025", "Completed"),
+        OrderItem1(6, "Tteok", "25 April, 2025", "Cancelled"),
     )
 
     Column(modifier = Modifier.fillMaxSize()) {

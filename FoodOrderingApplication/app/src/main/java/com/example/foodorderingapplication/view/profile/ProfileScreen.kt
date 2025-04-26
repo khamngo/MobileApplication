@@ -1,7 +1,11 @@
 package com.example.foodorderingapplication.view.profile
 
+import android.R.attr.onClick
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,28 +27,34 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.view.BottomNavBar
 import com.example.foodorderingapplication.view.admin.ProfileHeaderSection
+import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun ProfileScreen(navController: NavController    ,onNavigate: (String) -> Unit = {}) {
-    var userName = "Hoang Quy"
-    var location = "Sai Gon, Viet Nam"
-    var avatarUrl = "https://your-image-url.com/avatar.jpg"
+fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = viewModel()) {
+    val userState by viewModel.user.collectAsState()
 
     val settingOptions = listOf(
         SettingOption(Icons.Default.Person, "My Account", "my_account"),
         SettingOption(Icons.Default.ShoppingCart, "My Orders", "order"),
-        SettingOption(Icons.Default.AddCard, "Payment Method", "payment"),
-        SettingOption(Icons.Default.StarBorder, "My Reviews", "review"),
+        SettingOption(Icons.Default.AddCard, "Payment Method", "payment_method"),
+        SettingOption(Icons.Default.StarBorder, "My Reviews", "my_review"),
     )
 
     Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
@@ -54,7 +64,9 @@ fun ProfileScreen(navController: NavController    ,onNavigate: (String) -> Unit 
                 .background(Color(0xFFF7F7F7))
                 .padding(paddingValues)
         ) {
-            ProfileHeaderSection(userName, location, avatarUrl)
+            ProfileHeaderSection(userState.username, userState.email,
+                userState.avatarUrl.toString()
+            )
             Spacer(modifier = Modifier.height(24.dp))
 
             ProfileSettingsSection(
@@ -66,12 +78,13 @@ fun ProfileScreen(navController: NavController    ,onNavigate: (String) -> Unit 
 
             ProfileSettingsSection(
                 title = "General Settings",
-                settings = listOf(   SettingOption(Icons.Default.Info, "About us", "about_as")),
+                settings = listOf(SettingOption(Icons.Default.Info, "About us", "about_as")),
                 onNavigate = { route -> navController.navigate(route) }
             )
         }
     })
 }
+
 
 @Composable
 fun ProfileSettingsSection(
@@ -92,7 +105,7 @@ fun ProfileSettingsSection(
     Box(modifier = Modifier.background(Color.White)) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 18.dp)
+                .fillMaxWidth()
         ) {
             settings.forEach { setting ->
                 SettingItem(
@@ -111,15 +124,14 @@ fun SettingItem(icon: ImageVector, title: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .clickable(onClick = onClick).padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = "Icon",
             modifier = Modifier.size(24.dp),
-            tint = Color.Gray
+            tint = Color.Gray,
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
@@ -130,7 +142,7 @@ fun SettingItem(icon: ImageVector, title: String, onClick: () -> Unit) {
         Icon(
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = "Next",
-            tint = Color.Gray
+            tint = Color.Gray,
         )
     }
 }

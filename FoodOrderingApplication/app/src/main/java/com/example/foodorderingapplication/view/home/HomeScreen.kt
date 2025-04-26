@@ -84,7 +84,7 @@ fun HomeScreen(navController: NavController) {
                 .verticalScroll(rememberScrollState())
         ) {
             TopBar()
-            Column(            modifier = Modifier
+            Column(modifier = Modifier
                 .padding(16.dp)) {
                 DateTimePicker { selectedDate = it }
 
@@ -161,7 +161,7 @@ fun DateTimePicker(onDateSelected: (String) -> Unit) {
     OutlinedTextField(
         value = selectedDateTime,
         onValueChange = {},
-        label = { Text("Date and Time *") },
+        label = { Text("Date and Time") },
         trailingIcon = {
             IconButton(onClick = { datePickerDialog.show() }) {
                 Icon(Icons.Default.DateRange, contentDescription = null)

@@ -1,5 +1,8 @@
 package com.example.foodorderingapplication.view.menu
 
+import android.os.Build
+import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,12 +11,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,13 +27,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,28 +46,47 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.CartItem
 import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.view.MoMoPaymentWebView
 import com.example.foodorderingapplication.view.SubtotalAndButton
 import com.example.foodorderingapplication.viewmodel.CartViewModel
+import com.example.foodorderingapplication.viewmodel.CheckoutViewModel
+import com.example.foodorderingapplication.viewmodel.ShippingViewModel
+import java.text.DecimalFormat
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CheckoutScreen(viewModel: CartViewModel = viewModel(), navController: NavController) {
-    val cartItems by viewModel.cartItemItems.collectAsState()
+fun CheckoutScreen(
+    viewModel: CheckoutViewModel = viewModel(),
+    navController: NavController
+) {
+    val cartItems by viewModel.cartItems.collectAsState()
+    val subtotal by viewModel.subtotal.collectAsState()
     val total by viewModel.total.collectAsState()
+    val selectedPromo by viewModel.selectedPromo.collectAsState()
 
-    val subtotal = total + 2.0
+    LaunchedEffect(Unit) {
+        navController.currentBackStackEntry?.savedStateHandle?.getLiveData<String>("refresh")
+            ?.observe(navController.currentBackStackEntry!!) {
+                viewModel.reloadShippingAddress()
+            }
+    }
 
     Box(
         modifier = Modifier
@@ -75,16 +103,20 @@ fun CheckoutScreen(viewModel: CartViewModel = viewModel(), navController: NavCon
             HeaderSection("Checkout", navController)
 
             // Shipping, Delivery, Promos
-            ShippingDeliveryPromosSection(navController)
+            ShippingDeliveryPromosSection(viewModel, navController)
 
             // Items List
             ItemsList(cartItems)
 
             // Order Summary
-            OrderSummary()
+            OrderSummary(
+                subtotal = subtotal,
+                total = total,
+                isFreeShipping = selectedPromo == "Free Shipping"
+            )
 
             // Payment Method
-            PaymentMethod()
+            PaymentMethod(viewModel)
         }
 
         // Subtotal & Button
@@ -96,51 +128,59 @@ fun CheckoutScreen(viewModel: CartViewModel = viewModel(), navController: NavCon
         ) {
             SubtotalAndButton(
                 title = "Place Order",
-                subtotal = subtotal,
+                subtotal = total,
                 navController = navController,
-                pageName = "payment"
+                pageName = "thank_you",
+                onButtonClick = { viewModel.placeOrder() }
             )
         }
     }
 }
 
 @Composable
-fun ShippingDeliveryPromosSection(navController: NavController) {
+fun ShippingDeliveryPromosSection(viewModel: CheckoutViewModel, navController: NavController) {
     val showDialog = remember { mutableStateOf(false) }
-    val selectedDate = remember { mutableStateOf("Shipping now") }
-    val selectedTime = remember { mutableStateOf("") }
+    val selectedDate by viewModel.deliveryDate.collectAsState()
+    val selectedTime by viewModel.deliveryTime.collectAsState()
     val showPromoDialog = remember { mutableStateOf(false) }
-    val selectedPromo = remember { mutableStateOf("Free Shipping") }
+    val selectedPromo by viewModel.selectedPromo.collectAsState()
+    val shippingAddress by viewModel.shippingAddress.collectAsState()
+    val fullAddress = listOf(
+        shippingAddress.street,
+        shippingAddress.ward,
+        shippingAddress.district,
+        shippingAddress.province
+    ).filter { it.isNotBlank() }.joinToString(", ")
 
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider()
 
-        ShippingRow("SHIPPING", "Add shipping address") {
+        ShippingRow(
+            "SHIPPING",
+            fullAddress.ifEmpty { "Add shipping address" }
+        ) {
             navController.navigate("add_shopping_address")
         }
         HorizontalDivider()
 
-        ShippingRow("DELIVERY", selectedDate.value) {
+        ShippingRow("DELIVERY", "$selectedDate, $selectedTime") {
             showDialog.value = true
         }
         HorizontalDivider()
 
-        ShippingRow("PROMOS", selectedPromo.value) {
+        ShippingRow("PROMOS", selectedPromo) {
             showPromoDialog.value = true
         }
         HorizontalDivider()
 
         // Hiển thị dialog chọn ngày giao hàng
         DeliveryTimeDialog(showDialog) { date, time ->
-            selectedDate.value = date
-            selectedTime.value = time
-            showDialog.value = false
+            viewModel.updateDeliveryTime(date, time)
         }
 
         // Hiển thị dialog chọn mã giảm giá
         PromoDialog(showPromoDialog) { promo ->
-            showPromoDialog.value = false
-            selectedPromo.value = promo
+            viewModel.updatePromo(promo)
         }
     }
 }
@@ -160,7 +200,10 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = value, color = Color.Gray)
+            Text(
+                text = value, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, color = Color.Gray
+            )
             IconButton(onClick = onClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_arrow_forward),
@@ -192,28 +235,27 @@ fun ItemsList(cartItemItems: List<CartItem>) {
         }
 
         cartItemItems.forEach { cart ->
-            ItemRow(cart) // Chỉ truyền đối tượng Cart
+            ItemRow(cart)
         }
     }
 }
 
 @Composable
 fun ItemRow(cartItem: CartItem) {
-    val context = LocalContext.current
-    val imageId = remember(cartItem.imageRes) {
-        context.resources.getIdentifier(cartItem.imageRes, "drawable", context.packageName)
-    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = imageId),
+        AsyncImage(
+            model = cartItem.imageUrl,
             contentDescription = cartItem.name,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(60.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(4.dp)),
+            placeholder = painterResource(id = R.drawable.placeholder),
+            error = painterResource(id = R.drawable.image_error)
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -226,20 +268,25 @@ fun ItemRow(cartItem: CartItem) {
 }
 
 @Composable
-fun OrderSummary() {
+fun OrderSummary(subtotal: Double, total: Double, isFreeShipping: Boolean) {
     Column(
         verticalArrangement = Arrangement.spacedBy(14.dp),
-
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
         Text("Order Summary", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        SummaryRow("Subtotal (2)", "$23.98")
-        SummaryRow("Shipping total", "Free")
-        SummaryRow("Taxes", "$2.00")
+        SummaryRow("Subtotal", "$${"%.2f".format(subtotal)}")
+        SummaryRow("Shipping total", if (isFreeShipping) "Free" else "$2.00")
+        SummaryRow("Taxes", "$2.0")
         HorizontalDivider()
-        SummaryRow("Total", "$25.98", Color.Red, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        SummaryRow(
+            "Total",
+            "$${"%.2f".format(total)}",
+            Color.Red,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -263,45 +310,71 @@ fun SummaryRow(
 }
 
 @Composable
-fun PaymentMethod() {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Text("Payment Gateway", fontWeight = FontWeight.Bold)
-        PaymentOption(R.drawable.banking_method, "Cash on Delivery", true)
-        PaymentOption(R.drawable.cod_method, "Bank Account", false)
+fun PaymentMethod(viewModel: CheckoutViewModel) {
+    val paymentMethod by viewModel.paymentMethod.collectAsState()
+    val orderStatus by viewModel.orderStatus.collectAsState()
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Payment Method", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        PaymentOption(
+            icon = R.drawable.momo_method, // Icon MoMo
+            title = "MoMo",
+            selected = paymentMethod == "MoMo"
+        ) {
+            viewModel.updatePaymentMethod("MoMo")
+        }
+
+        PaymentOption(
+            icon = R.drawable.cod_method,
+            title = "Cash on Delivery",
+            selected = paymentMethod == "COD"
+        ) {
+            viewModel.updatePaymentMethod("COD")
+        }
+
+        // Hiển thị WebView cho MoMo hoặc Bank Card
+        orderStatus?.let { status ->
+            if (status.startsWith("Chuyển hướng đến MoMo: ") || status.startsWith("Chuyển hướng đến thanh toán thẻ: ")) {
+                val paymentUrl = status.substringAfter(": ")
+                MoMoPaymentWebView(paymentUrl) { success ->
+                    viewModel.updateOrderStatus(
+                        orderId = status.substringAfter("orderId=").substringBefore("&"),
+                        status = if (success) "completed" else "failed"
+                    )
+                }
+            } else {
+                Text(status, color = if (status.contains("Lỗi")) Color.Red else Color.Green)
+            }
+        }
     }
 }
 
 @Composable
-fun PaymentOption(image: Int, label: String, selected: Boolean) {
+fun PaymentOption(
+    @DrawableRes icon: Int,
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp)
+            .clickable { onClick() }
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-
-        Image(
-            painter = painterResource(id = image),
-            contentDescription = "Arrow back",
-            modifier = Modifier.size(30.dp)
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = title,
+            modifier = Modifier.size(24.dp)
         )
-
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-
-        ) {
-            Text(label)
-            RadioButton(selected = selected, onClick = {})
-        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(title, fontSize = 16.sp)
+        Spacer(modifier = Modifier.weight(1f))
+        RadioButton(
+            selected = selected,
+            onClick = onClick
+        )
     }
 }
 
@@ -391,9 +464,9 @@ fun DeliveryOption(
 fun PromoDialog(showDialog: MutableState<Boolean>, onPromoSelected: (String) -> Unit) {
     val promoOptions = listOf(
         "Free Shipping",
-        "5% off for orders above 100K",
-        "10% off for orders above 200K",
-        "15% off for orders above 500K"
+        "5% off for orders above 5$",
+        "10% off for orders above 10$",
+        "15% off for orders above 20$"
     )
     val selectedPromo = remember { mutableStateOf(promoOptions[0]) } // Mặc định là "Free Shipping"
 

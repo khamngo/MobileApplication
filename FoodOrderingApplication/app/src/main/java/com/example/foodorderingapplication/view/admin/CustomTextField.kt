@@ -30,10 +30,10 @@ fun CustomTextField(
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp),
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Yellow,  // Background color when focused
-            unfocusedContainerColor = Color.White, // Background color when not focused
-            focusedIndicatorColor = Color.White, // Outline color when focused
-            unfocusedIndicatorColor = Color.Gray // Outline color when not focused
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            focusedIndicatorColor = Color.Gray,
+            unfocusedIndicatorColor = Color.Gray
 
         )
     )

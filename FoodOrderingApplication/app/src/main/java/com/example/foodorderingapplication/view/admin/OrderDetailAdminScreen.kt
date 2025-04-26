@@ -95,11 +95,11 @@ fun OrderItem(order: Order) {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxWidth(),
         )  {
-            Image(
-                painter = painterResource(id = R.drawable.tteok), // Thay bằng ảnh thực tế
-                contentDescription = "Product Image",
-                modifier = Modifier.size(84.dp)
-            )
+//            Image(
+//                painter = painterResource(id = R.drawable.tteok),
+//                contentDescription = "Product Image",
+//                modifier = Modifier.size(84.dp)
+//            )
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)            ,modifier = Modifier.fillMaxWidth()) {
                 Text(text = order.productName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
