@@ -62,7 +62,9 @@ fun AddFoodScreen(navController: NavController){
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
-            HeaderSection("Add Food", navController)
+            HeaderSection("Add Food"){
+                navController.popBackStack()
+            }
 
             CustomTextField(
                 value = foodName, onValueChange = { foodName = it }, label = "Food Name"

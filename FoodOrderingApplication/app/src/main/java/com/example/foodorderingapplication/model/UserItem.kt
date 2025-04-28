@@ -7,3 +7,9 @@ data class UserItem(
     val phone: String? = null,
     val avatarUrl: String? = null
 )
+
+data class UserProfile(
+    val role: String = "user",
+    val email: String = "",
+    val username: String = ""
+)

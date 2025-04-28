@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.UserItem
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class MyAccountViewModel : ViewModel() {
+    private val auth = FirebaseAuth.getInstance()
 
     private val _user = MutableStateFlow(UserItem())
     val user: StateFlow<UserItem> = _user
@@ -54,5 +56,9 @@ class MyAccountViewModel : ViewModel() {
                 ?.addOnSuccessListener { onSuccess() }
                 ?.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi không xác định") }
         }
+    }
+
+    fun logout() {
+        auth.signOut()  // Firebase sign-out
     }
 }

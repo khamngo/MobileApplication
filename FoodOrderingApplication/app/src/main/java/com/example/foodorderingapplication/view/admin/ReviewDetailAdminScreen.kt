@@ -50,7 +50,9 @@ fun ReviewDetailScreen(
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection("Review Detail", navController)
+        HeaderSection("Review Detail"){
+            navController.popBackStack()
+        }
 
         LazyColumn(
             modifier = Modifier

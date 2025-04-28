@@ -2,11 +2,13 @@ package com.example.foodorderingapplication.view.home
 
 import android.R.attr.fontWeight
 import android.app.Activity
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,10 +33,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,54 +63,84 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.foodorderingapplication.AdminActivity
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.auth.createGoogleSignInClient
 import com.example.foodorderingapplication.ui.theme.MograFont
+import com.example.foodorderingapplication.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.common.io.Files.append
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     val context = LocalContext.current
     val activity = context as? Activity
+    val signInSuccess by authViewModel.signInSuccess.collectAsState()
+    val errorMessage by authViewModel.errorMessage.collectAsState()
+    val userRole by authViewModel.userRole.collectAsState()
 
+    // Google Sign-In
     val auth = FirebaseAuth.getInstance()
     val googleSignInClient = remember { createGoogleSignInClient(context) }
 
-    val googleSignInLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-                auth.signInWithCredential(credential).addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        navController.navigate(BottomNavItem.Home.route)
+    val googleSignInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            authViewModel.signInWithGoogle(account.idToken ?: throw Exception("No ID token"))
+        } catch (e: ApiException) {
+            authViewModel.resetSignInState()
+            Toast.makeText(context, "Google Sign-In Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Xử lý chuyển hướng dựa trên vai trò
+    LaunchedEffect(signInSuccess, userRole) {
+        if (signInSuccess) {
+            when (userRole) {
+                "admin" -> {
+                    // Khởi động AdminActivity
+                    val intent = Intent(context, AdminActivity::class.java)
+                    context.startActivity(intent)
+                    activity?.finish() // Đóng LoginScreen
+                }
+                "user" -> {
+                    // Điều hướng đến home
+                    navController.navigate(BottomNavItem.Home.route) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
                     }
                 }
-            } catch (e: Exception) {
-                Toast.makeText(context, "Google Sign-In Failed: ${e.message}", Toast.LENGTH_SHORT)
-                    .show()
+                else -> {
+                    // Vai trò chưa được tải, có thể hiển thị loading
+                }
             }
         }
+    }
 
-    // Sử dụng rememberSaveable để giữ trạng thái khi xoay màn hình
-    val usernameState = rememberSaveable { mutableStateOf("") }
-    val passwordState = rememberSaveable { mutableStateOf("") }
-    var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    var loginStatus by rememberSaveable { mutableStateOf<String?>(null) } // Thêm trạng thái cho thông báo đăng nhập
+    // Hiển thị lỗi
+    if (errorMessage.isNotEmpty()) {
+        LaunchedEffect(errorMessage) {
+            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
 
+    // UI
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues).background(Color(0xFFF7F7F7))
+                .padding(paddingValues)
+                .background(Color(0xFFF7F7F7))
         ) {
             Box(
                 modifier = Modifier
@@ -117,11 +152,13 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(320.dp),
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Crop
                 )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth().align(Alignment.Center),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.Center),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -137,11 +174,10 @@ fun LoginScreen(navController: NavController) {
                         text = "KFoods",
                         fontWeight = FontWeight.Bold,
                         fontSize = 48.sp,
-                        fontFamily = MograFont,
+                         fontFamily = MograFont,
                         color = Color(0xFFFA1B31)
                     )
                 }
-
             }
 
             Surface(
@@ -158,31 +194,26 @@ fun LoginScreen(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text("Sign in", fontSize = 36.sp, fontWeight = FontWeight.Bold )
+                    Text("Sign in", fontSize = 36.sp, fontWeight = FontWeight.Bold)
+
                     // Ô nhập username
+                    var username by rememberSaveable { mutableStateOf("") }
                     OutlinedTextField(
-                        value = usernameState.value,
-                        onValueChange = { usernameState.value = it },
-                        label = { Text("Username or Email ") },
+                        value = username,
+                        onValueChange = { username = it },
+                        label = { Text("Username or Email") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp),
-                        shape = RoundedCornerShape(8.dp),
-//                        colors = OutlinedTextFieldDefaults.colors(
-//                            focusedBorderColor = White,
-//                            unfocusedBorderColor = White,
-//                            cursorColor = White,
-//                            focusedLabelColor = White,
-//                            unfocusedLabelColor = White,
-//                            focusedTextColor = White,
-//                            unfocusedTextColor = White
-//                        )
+                        shape = RoundedCornerShape(8.dp)
                     )
 
                     // Ô nhập password
+                    var password by rememberSaveable { mutableStateOf("") }
+                    var passwordVisible by rememberSaveable { mutableStateOf(false) }
                     OutlinedTextField(
-                        value = passwordState.value,
-                        onValueChange = { passwordState.value = it },
+                        value = password,
+                        onValueChange = { password = it },
                         label = { Text("Password") },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -190,35 +221,19 @@ fun LoginScreen(navController: NavController) {
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         trailingIcon = {
-                            val image = if (passwordVisible)
-                                Icons.Filled.Visibility
-                            else
-                                Icons.Filled.VisibilityOff
-
-                            val description =
-                                if (passwordVisible) "Ẩn mật khẩu" else "Hiện mật khẩu"
-
+                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = image,
-                                    contentDescription = description,
-                                )
+                                Icon(imageVector = image, contentDescription = if (passwordVisible) "Ẩn mật khẩu" else "Hiện mật khẩu")
                             }
                         },
-                        shape = RoundedCornerShape(8.dp),
-//                        colors = OutlinedTextFieldDefaults.colors(
-//                            focusedBorderColor = White,
-//                            unfocusedBorderColor = White,
-//                            cursorColor = White,
-//                            focusedLabelColor = White,
-//                            unfocusedLabelColor = White,
-//                            focusedTextColor = White,
-//                            unfocusedTextColor = White
-//                        )
+                        shape = RoundedCornerShape(8.dp)
                     )
 
                     Button(
-                        onClick = { navController.navigate("") },
+                        onClick = {
+                            // TODO: Xử lý đăng nhập bằng email/password nếu cần
+                            Toast.makeText(context, "Email/Password login not implemented", Toast.LENGTH_SHORT).show()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -228,7 +243,7 @@ fun LoginScreen(navController: NavController) {
                         Text(
                             "Sign In",
                             fontSize = 20.sp,
-                            color = White,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -243,10 +258,12 @@ fun LoginScreen(navController: NavController) {
                             }
                         }
                     }
+
                     Spacer(modifier = Modifier.height(16.dp))
+
                     SignUpPrompt(
                         onSignUpClick = {
-                            navController.navigate("sign_up_screen")
+                            navController.navigate("sign_up")
                         }
                     )
                 }
@@ -311,7 +328,7 @@ fun SignUpPrompt(
             onClick = { offset ->
                 annotatedText.getStringAnnotations(tag = "SIGN_UP", start = offset, end = offset)
                     .firstOrNull()?.let {
-                        onSignUpClick() // Điều hướng khi người dùng click vào "Sign Up"
+                        onSignUpClick()
                     }
             },
             style = TextStyle(

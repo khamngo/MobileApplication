@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.menu
 
+import android.R.attr.description
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -63,17 +64,14 @@ fun FoodDetailScreen(
 ) {
     val foodDetail by viewModel.foodDetail.collectAsState()
 
-    val portionPrices = mapOf("6" to 10.0, "8" to 12.0, "10" to 14.0).toList()
-    val drinkPrices = mapOf("Pepsi" to 0.0, "Coca Cola" to 0.5, "Fanta" to 0.5).toList()
+    val portionPrices by viewModel.portionPrices.collectAsState()
+    val drinkPrices by viewModel.drinkPrices.collectAsState()
+    val subtotal by viewModel.subtotal.collectAsState()
 
-    val selectedPortion = viewModel.selectedPortion.value
-    val quantity = viewModel.quantity.intValue
-    val selectedDrink = viewModel.selectedDrink.value
-    val instructions = viewModel.instructions.value
-
-    val subtotal =
-        (portionPrices.find { it.first == selectedPortion }?.second ?: 0.0) * quantity +
-                (drinkPrices.find { it.first == selectedDrink }?.second ?: 0.0)
+    val selectedPortion by viewModel.selectedPortion.collectAsState()
+    val quantity by viewModel.quantity.collectAsState()
+    val selectedDrink by viewModel.selectedDrink.collectAsState()
+    val instructions by viewModel.instructions.collectAsState()
 
     LaunchedEffect(foodId) {
         foodId?.let { viewModel.fetchFoodById(it) }
@@ -94,6 +92,7 @@ fun FoodDetailScreen(
                 FoodHeaderSection(
                     imageUrl = it.imageUrl,
                     name = it.name,
+                    description = it.description,
                     navController = navController
                 )
 
@@ -144,6 +143,7 @@ fun FoodDetailScreen(
 fun FoodHeaderSection(
     imageUrl: String,
     name: String,
+    description: String,
     navController: NavHostController
 ) {
     Box(
@@ -154,7 +154,7 @@ fun FoodHeaderSection(
             contentDescription = name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .height(200.dp)
+                .height(240.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(4.dp)),
             placeholder = painterResource(id = R.drawable.placeholder),
@@ -187,15 +187,25 @@ fun FoodHeaderSection(
             }
         }
 
-        Text(
-            text = name,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(16.dp)
-        )
+        ) {
+            Text(
+                text = name,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = description,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+        }
     }
 }
 

@@ -27,6 +27,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,10 +44,12 @@ import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.OrderStatus
 import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.viewmodel.OrderDetailViewModel
 import com.example.foodorderingapplication.viewmodel.OrderViewModel
 
 @Composable
-fun OrderDetailScreen(navController: NavController) {
+fun OrderDetailScreen(navController: NavController, orderId: String, viewModel: OrderDetailViewModel = viewModel()) {
+    val orderDetail by viewModel.orderDetail.collectAsState()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -58,7 +62,9 @@ fun OrderDetailScreen(navController: NavController) {
                 .padding(bottom = 120.dp)
         ) {
             // Header
-            HeaderSection("Order Detail", navController)
+            HeaderSection("Order Detail"){
+                navController.popBackStack()
+            }
 
             // Status delivery progress (Fake with Icons)
             DeliveryStatusSection()

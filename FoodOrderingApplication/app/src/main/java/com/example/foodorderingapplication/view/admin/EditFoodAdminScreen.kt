@@ -69,7 +69,9 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
-            HeaderSection("Edit Food", navController)
+            HeaderSection("Edit Food"){
+                navController.popBackStack()
+            }
 
             CustomTextField(
                 value = foodName, onValueChange = { foodName = it }, label = "Food Name"

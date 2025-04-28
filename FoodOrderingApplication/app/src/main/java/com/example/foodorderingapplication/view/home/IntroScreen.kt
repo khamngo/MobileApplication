@@ -1,5 +1,8 @@
 package com.example.foodorderingapplication.view.home
 
+import android.app.Activity
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,9 +14,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,36 +32,55 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.foodorderingapplication.AdminActivity
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.ui.theme.MograFont
+import com.example.foodorderingapplication.viewmodel.AuthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
+import kotlin.jvm.java
 
 @Composable
-fun IntroScreen(navController: NavController) {
-    val currentUser = FirebaseAuth.getInstance().currentUser
+fun IntroScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     val context = LocalContext.current
+    val navigateTo by authViewModel.navigateTo.collectAsState()
 
-    // Chỉ chạy một lần
-    LaunchedEffect(Unit) {
-        delay(2000) // Delay splash screen 2s
-        if (currentUser != null) {
-            // Đã đăng nhập → Home
-            navController.navigate(BottomNavItem.Home.route) {
-                popUpTo("intro") { inclusive = true }
-            }
-        } else {
-            // Chưa đăng nhập → Login
-            navController.navigate("login") {
-                popUpTo("intro") { inclusive = true }
+    LaunchedEffect(navigateTo) {
+        navigateTo?.let { route ->
+            when (route) {
+                "admin_home" -> {
+                    // Mở Activity admin
+                    val intent = Intent(context, AdminActivity::class.java)
+                    context.startActivity(intent)
+
+                    // Nếu muốn tắt IntroScreen sau khi mở AdminHome
+                    if (context is Activity) {
+                        context.finish()
+                    }
+                }
+
+                "user_home" -> {
+                    // Điều hướng bình thường cho user
+                    navController.navigate(BottomNavItem.Home.route) {
+                        popUpTo("intro") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+
+                "login" -> {
+                    navController.navigate("login") {
+                        popUpTo("intro") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             }
         }
     }
 
-    // UI hiển thị splash
     Box(
         modifier = Modifier.fillMaxSize()
     ) {

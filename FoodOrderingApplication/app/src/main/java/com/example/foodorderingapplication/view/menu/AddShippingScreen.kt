@@ -107,7 +107,9 @@ fun AddShippingScreen(
             .verticalScroll(rememberScrollState())
     ) {
         // Header
-        HeaderSection("Add shipping address", navController)
+        HeaderSection("Add shipping address"){
+            navController.popBackStack()
+        }
 
         // Hiển thị thông báo lỗi chung
         errorMessage?.let {
@@ -190,7 +192,9 @@ fun AddShippingScreen(
                 userId = userId,
                 onSuccess = {
                     Toast.makeText(context, "Đã lưu địa chỉ thành công!", Toast.LENGTH_SHORT).show()
-                    navController.currentBackStackEntry?.savedStateHandle?.set("refresh", "true")
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("add_shopping_address", true)
                     navController.popBackStack()
                 },
                 onFailure = {

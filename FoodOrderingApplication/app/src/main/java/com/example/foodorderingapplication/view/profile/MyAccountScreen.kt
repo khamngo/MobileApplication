@@ -29,12 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.admin.CustomTextField
 import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
@@ -50,7 +48,9 @@ fun MyAccountScreen(
     var confirmPassword by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection("My Account", navController)
+        HeaderSection("My Account"){
+            navController.popBackStack()
+        }
 
         Column(
             modifier = Modifier
@@ -77,8 +77,14 @@ fun MyAccountScreen(
                 label = "Phone"
             )
 
-            PasswordField(label = "Password", password = password, onPasswordChange = { password = it })
-            PasswordField(label = "Confirm Password", password = confirmPassword, onPasswordChange = { confirmPassword = it })
+            PasswordField(
+                label = "Password",
+                password = password,
+                onPasswordChange = { password = it })
+            PasswordField(
+                label = "Confirm Password",
+                password = confirmPassword,
+                onPasswordChange = { confirmPassword = it })
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -89,12 +95,16 @@ fun MyAccountScreen(
                             onSuccess = { /* thông báo thành công */ },
                             onFailure = { error -> /* thông báo lỗi */ }
                         )
+                        navController.popBackStack()
                     } else {
                         // thông báo lỗi xác nhận mật khẩu
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(52.dp),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text("Update", fontSize = 16.sp, color = Color.White)
@@ -114,10 +124,14 @@ fun PasswordField(
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
+        placeholder = {
+            Text(label, color = Color.Gray)
+        },
         label = { Text(text = label) },
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
-            val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+            val icon =
+                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
             val description = if (passwordVisible) "Hide password" else "Show password"
 
             IconButton(onClick = { passwordVisible = !passwordVisible }) {

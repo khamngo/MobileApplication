@@ -45,7 +45,7 @@ fun NavigationGraphAdmin() {
         }
         composable("order") { OrderListScreen(navController = navController) }
 
-        composable("order/{orderId}") { backStackEntry ->
+        composable("order_detail/{orderId}") { backStackEntry ->
             val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             OrderDetailScreen(navController = navController, orderId = orderId)
         }

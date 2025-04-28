@@ -53,7 +53,9 @@ fun PaymentMethodScreen(navController: NavController) {
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         // Header
-        HeaderSection("Payment Mehthod", navController)
+        HeaderSection("Payment Mehthod"){
+            navController.popBackStack()
+        }
 
         Column(
             modifier = Modifier

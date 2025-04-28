@@ -40,7 +40,9 @@ fun ReviewScreen(
     val state by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection("Bibimbap Bowl", navController)
+        HeaderSection("Bibimbap Bowl"){
+            navController.popBackStack()
+        }
 
         Column(
             modifier = Modifier

@@ -19,15 +19,15 @@ import androidx.navigation.NavController
 import com.example.foodorderingapplication.R
 
 @Composable
-fun HeaderSection(title: String, navController: NavController) {
+fun HeaderSection(title: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFFFD700)) // Màu vàng
+            .background(Color(0xFFFFD700))
             .padding(top = 16.dp)
     ) {
         IconButton(
-            onClick = { navController.popBackStack() },
+            onClick = { onClick() },
             modifier = Modifier.align(Alignment.CenterStart)
         ) {
             Icon(
@@ -44,3 +44,4 @@ fun HeaderSection(title: String, navController: NavController) {
         )
     }
 }
+

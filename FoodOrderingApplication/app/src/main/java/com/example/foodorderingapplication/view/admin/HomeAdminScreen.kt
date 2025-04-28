@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -68,9 +69,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = viewModel()) {
-    val foodList by viewModel.foods.collectAsState(initial = emptyList())
-    val isLoading by viewModel.isLoading.collectAsState(initial = true)
-    val isError by viewModel.isError.collectAsState(initial = false)
+    val foodList by viewModel.foods.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedFoodItemToDelete by remember { mutableStateOf<FoodItem?>(null) }
 
@@ -85,104 +84,78 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues).background(Color(0xFFF7F7F7))
+                    .padding(paddingValues)
+                    .background(Color(0xFFF7F7F7))
             ) {
-                when {
-                    isLoading -> {
-                        // Loading indicator
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                    isError -> {
-                        // Error message
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Failed to load food list", color = Color.Red)
-                        }
-                    }
-                    foodList.isEmpty() -> {
-                        // Empty state
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("No food items found", color = Color.Gray)
-                        }
 
+                // Show the list
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White)
+                ) {
+                    item { TopBar() }
+                    items(foodList) { food ->
+                        FoodCard(
+                            foodItem = food,
+                            onEdit = { navController.navigate("edit_food/${food.id}") },
+                            onDelete = {
+                                selectedFoodItemToDelete = food
+                                showDeleteDialog = true
+                            }
+                        )
                     }
-                    else -> {
-                        // Show the list
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.White)
-                        ) {
-                            item { TopBar() }
-                            items(foodList) { food ->
-                                FoodCard(
-                                    foodItem = food,
-                                    onEdit = { navController.navigate("edit_food/${food.id}") },
-                                    onDelete = {            selectedFoodItemToDelete = food
-                                        showDeleteDialog = true }
-                                )
+                }
+                if (showDeleteDialog && selectedFoodItemToDelete != null) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteDialog = false },
+                        title = { Text("Delete Confirmation") },
+                        text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                selectedFoodItemToDelete?.let { food ->
+                                    viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
+                                }
+                                showDeleteDialog = false
+                            }) {
+                                Text("Delete", color = Color.Red)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteDialog = false }) {
+                                Text("Cancel")
                             }
                         }
-                        if (showDeleteDialog && selectedFoodItemToDelete != null) {
-                            AlertDialog(
-                                onDismissRequest = { showDeleteDialog = false },
-                                title = { Text("Delete Confirmation") },
-                                text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
-                                confirmButton = {
-                                    TextButton(onClick = {
-                                        selectedFoodItemToDelete?.let { food ->
-                                            viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
-                                        }
-                                        showDeleteDialog = false
-                                    }) {
-                                        Text("Delete", color = Color.Red)
-                                    }
-                                },
-                                dismissButton = {
-                                    TextButton(onClick = { showDeleteDialog = false }) {
-                                        Text("Cancel")
-                                    }
+                    )
+                }
+
+                if (showDeleteDialog && selectedFoodItemToDelete != null) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteDialog = false },
+                        title = { Text("Delete Confirmation") },
+                        text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                selectedFoodItemToDelete?.let { food ->
+                                    viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
                                 }
-                            )
+                                showDeleteDialog = false
+                            }) {
+                                Text("Delete", color = Color.Red)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteDialog = false }) {
+                                Text("Cancel")
+                            }
                         }
+                    )
+                }
 
-                        if (showDeleteDialog && selectedFoodItemToDelete != null) {
-                            AlertDialog(
-                                onDismissRequest = { showDeleteDialog = false },
-                                title = { Text("Delete Confirmation") },
-                                text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
-                                confirmButton = {
-                                    TextButton(onClick = {
-                                        selectedFoodItemToDelete?.let { food ->
-                                            viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
-                                        }
-                                        showDeleteDialog = false
-                                    }) {
-                                        Text("Delete", color = Color.Red)
-                                    }
-                                },
-                                dismissButton = {
-                                    TextButton(onClick = { showDeleteDialog = false }) {
-                                        Text("Cancel")
-                                    }
-                                }
-                            )
-                        }
-
-
-                        Box(
-                            modifier = Modifier.align(Alignment.BottomEnd)
-                        ) {
-                            DraggableAddIcon(navController = navController)
-                        }
-                    }
+                Box(
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                ) {
+                    DraggableAddIcon(navController = navController)
                 }
             }
         }
@@ -198,7 +171,9 @@ fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
     }
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical =  8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(Color.White),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -219,7 +194,8 @@ fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp),
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = foodItem.name, fontWeight = FontWeight.Bold)
@@ -249,12 +225,19 @@ fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
 @Composable
 fun DraggableAddIcon(navController: NavController) {
     val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
+    val iconSize = 70.dp
+
     LaunchedEffect(Unit) {
-        offsetX = with(density) { -10.dp.toPx() }
-        offsetY = with(density) { -10.dp.toPx() }
+        offsetX = with(density) { (screenWidth - iconSize - 10.dp).toPx() }
+        offsetY =
+            with(density) { (screenHeight - iconSize - 80.dp).toPx() } // chừa space cho bottom bar nếu có
     }
 
     Box(
@@ -268,13 +251,23 @@ fun DraggableAddIcon(navController: NavController) {
                 .clip(CircleShape)
                 .background(Color(0xFFFFD700))
                 .align(Alignment.Center)
-                .clickable { navController.navigate("add_food") }
+                .clickable { navController.navigate("cart") }
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
-                        offsetX += dragAmount.x
-                        offsetY += dragAmount.y
+                        val iconPxSize = with(density) { iconSize.toPx() }
+
+                        val screenWidthPx = with(density) { screenWidth.toPx() }
+                        val screenHeightPx = with(density) { screenHeight.toPx() }
+                        val bottomBarHeightPx = with(density) { 80.dp.toPx() }
+
+                        val maxX = screenWidthPx - iconPxSize
+                        val maxY = screenHeightPx - iconPxSize - bottomBarHeightPx
+
+                        offsetX = (offsetX + dragAmount.x).coerceIn(0f, maxX)
+                        offsetY = (offsetY + dragAmount.y).coerceIn(0f, maxY)
                     }
+
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -287,10 +280,4 @@ fun DraggableAddIcon(navController: NavController) {
             )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun Greeting1Preview() {
-    NavigationGraph()
 }

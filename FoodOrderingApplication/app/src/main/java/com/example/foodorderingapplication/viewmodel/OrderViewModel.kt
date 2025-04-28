@@ -68,13 +68,29 @@ class OrderViewModel : ViewModel() {
             }
     }
 
-
     private fun fetchUserOrders() {
         val userId = auth.currentUser?.uid ?: return
         viewModelScope.launch {
             try {
                 val snapshot = db.collection("orders")
                     .whereEqualTo("userId", userId)
+                    .get()
+                    .await()
+
+                val orderList = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(OrderItem::class.java)?.copy(orderId = doc.id)
+                }
+                _orders.value = orderList.sortedByDescending { it.orderDate }
+            } catch (e: Exception) {
+                println("Lỗi khi tải đơn hàng: ${e.message}")
+            }
+        }
+    }
+
+    private fun fetchOrders() {
+        viewModelScope.launch {
+            try {
+                val snapshot = db.collection("orders")
                     .get()
                     .await()
 

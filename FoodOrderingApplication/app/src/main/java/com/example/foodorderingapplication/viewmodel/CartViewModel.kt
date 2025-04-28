@@ -120,4 +120,15 @@ class CartViewModel : ViewModel() {
                 println("Lỗi khi cập nhật tổng tiền: $e")
             }
     }
+
+    fun updateInstructions(foodId: String, instructions: String) {
+        if (userId.isEmpty()) return
+
+        db.collection("carts").document(userId)
+            .collection("items").document(foodId)
+            .update("instructions", instructions)
+            .addOnSuccessListener { println("Đã cập nhật instructions") }
+            .addOnFailureListener { e -> println("Lỗi khi cập nhật instructions: $e") }
+    }
+
 }

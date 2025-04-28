@@ -12,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,21 +22,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.profile.PasswordField
+import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
 
 @Composable
-fun AdminAccountScreen(  navController: NavController) {
-    var username by remember { mutableStateOf("Ngo Minh Kham") }
-    var email by remember { mutableStateOf("ngominhkham25@gmail.com") }
-    var phone by remember { mutableStateOf("+ 84 524168234") }
+fun AdminAccountScreen(navController: NavController, viewModel: MyAccountViewModel = viewModel()) {
+    val userState by viewModel.user.collectAsState()
+
     var password by remember { mutableStateOf("ngominhkham25") }
     var confirmPassword by remember { mutableStateOf("ngominhkham25") }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Header
-        HeaderSection("Admin Account", navController)
+        HeaderSection("Admin Account") {
+            navController.popBackStack()
+        }
 
         Column(
             modifier = Modifier
@@ -45,32 +49,51 @@ fun AdminAccountScreen(  navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CustomTextField(
-                value = username,
-                onValueChange = { username = it },
+                value = userState.username,
+                onValueChange = { viewModel.updateUsername(it) },
                 label = "Username"
             )
 
             CustomTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = userState.email,
+                onValueChange = { viewModel.updateEmail(it) },
                 label = "Email"
             )
 
             CustomTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = "Email"
+                value = userState.phone ?: "",
+                onValueChange = { viewModel.updatePhone(it) },
+                label = "Phone"
             )
 
-            PasswordField(label = "Password", password = password, onPasswordChange = { password = it })
-            PasswordField(label = "Confirm Password", password = confirmPassword, onPasswordChange = { confirmPassword = it })
+            PasswordField(
+                label = "Password",
+                password = password,
+                onPasswordChange = { password = it })
+            PasswordField(
+                label = "Confirm Password",
+                password = confirmPassword,
+                onPasswordChange = { confirmPassword = it })
 
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { /* Xử lý thanh toán */ },
+                onClick = {
+                    if (password == confirmPassword) {
+                        viewModel.saveChanges(
+                            onSuccess = { /* thông báo thành công */ },
+                            onFailure = { error -> /* thông báo lỗi */ }
+                        )
+                        navController.popBackStack()
+                    } else {
+                        // thông báo lỗi xác nhận mật khẩu
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)), // Màu vàng
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(52.dp),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text("Update", fontSize = 16.sp, color = Color.White)

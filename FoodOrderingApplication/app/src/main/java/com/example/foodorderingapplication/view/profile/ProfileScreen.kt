@@ -1,8 +1,5 @@
 package com.example.foodorderingapplication.view.profile
 
-import android.R.attr.onClick
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCard
 import androidx.compose.material.icons.filled.Info
@@ -23,6 +21,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,20 +31,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.foodorderingapplication.NavigationGraph
+import coil.compose.AsyncImage
+import com.example.foodorderingapplication.model.SettingOption
+import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.view.BottomNavBar
-import com.example.foodorderingapplication.view.admin.ProfileHeaderSection
 import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
-import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = viewModel()) {
@@ -54,7 +54,7 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
         SettingOption(Icons.Default.Person, "My Account", "my_account"),
         SettingOption(Icons.Default.ShoppingCart, "My Orders", "order"),
         SettingOption(Icons.Default.AddCard, "Payment Method", "payment_method"),
-        SettingOption(Icons.Default.StarBorder, "My Reviews", "my_review"),
+        SettingOption(Icons.Default.StarBorder, "My Reviews", "my_review")
     )
 
     Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
@@ -81,10 +81,62 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
                 settings = listOf(SettingOption(Icons.Default.Info, "About us", "about_as")),
                 onNavigate = { route -> navController.navigate(route) }
             )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Logout Button
+            Button(
+                onClick = {
+                    // Handle Logout action here, for example, sign out from Firebase
+                    viewModel.logout()
+                    navController.navigate("login") {
+                        // Clear the back stack so the user can't go back to the Home screen
+                        popUpTo("intro") { inclusive = true }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                Text(text = "Log out", color = Color.White, fontWeight = FontWeight.Bold)
+            }
         }
     })
 }
 
+@Composable
+fun ProfileHeaderSection(userName: String, location: String, avatarUrl: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+    ) {
+        AsyncImage(
+            model = avatarUrl,
+            contentDescription = "Avatar",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(90.dp)
+                .clip(CircleShape)
+        )
+
+        Text(
+            text = userName,
+            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp,
+            fontFamily = MograFont
+        )
+
+        Text(
+            text = location,
+            color = Color.Gray,
+            fontSize = 16.sp
+        )
+    }
+}
 
 @Composable
 fun ProfileSettingsSection(
@@ -147,8 +199,4 @@ fun SettingItem(icon: ImageVector, title: String, onClick: () -> Unit) {
     }
 }
 
-data class SettingOption(
-    val icon: ImageVector,
-    val title: String,
-    val route: String
-)
+

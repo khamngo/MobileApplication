@@ -110,7 +110,6 @@ fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavCon
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 indicator = { tabPositions ->
-                    // Vẽ đường line vàng ngắt quãng
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier
                             .tabIndicatorOffset(tabPositions[selectedTabIndex])
@@ -145,17 +144,16 @@ fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavCon
             }
         }
 
-        LazyColumn(modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
             if (selectedTabIndex == 0) {
                 items(popular) { food ->
                     FoodItems(food, onClick = { navController.navigate("food_detail/${food.id}") })
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    HorizontalDivider(modifier = Modifier.padding(12.dp))
                 }
             } else {
                 items(deal) { food ->
                     FoodItems(food, onClick = { navController.navigate("food_detail/${food.id}") })
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
                 }
             }
         }
@@ -169,7 +167,7 @@ fun FoodItems(foodItem: FoodItem, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-       .clickable{onClick()}
+            .clickable{onClick()}.padding(16.dp)
     ) {
         AsyncImage(
             model = foodItem.imageUrl,
@@ -196,5 +194,5 @@ fun FoodItems(foodItem: FoodItem, onClick: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun Preview() {
-    NavigationGraph()
+
 }

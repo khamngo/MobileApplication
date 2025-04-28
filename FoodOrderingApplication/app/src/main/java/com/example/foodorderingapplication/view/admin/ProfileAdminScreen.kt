@@ -1,5 +1,7 @@
 package com.example.foodorderingapplication.view.admin
 
+import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,37 +18,45 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAddAlt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.foodorderingapplication.MainActivity
 import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.view.BottomNavBar
 import com.example.foodorderingapplication.model.BottomNavItem
+import com.example.foodorderingapplication.model.SettingOption
+import com.example.foodorderingapplication.view.profile.ProfileHeaderSection
 import com.example.foodorderingapplication.view.profile.ProfileSettingsSection
-import com.example.foodorderingapplication.view.profile.SettingOption
+import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
 
 @Composable
 fun ProfileAdminScreen(
     navController: NavController,
-    onNavigate: (String) -> Unit = {}
+    viewModel: MyAccountViewModel = viewModel()
 ) {
+    val userState by viewModel.user.collectAsState()
+    val context = LocalContext.current
     val bottomNavItems = listOf(BottomNavItem.Home, BottomNavItem.Profile)
-    var userName = "Hoang Quy"
-    var location = "Sai Gon, Viet Nam"
-    var avatarUrl = "https://your-image-url.com/avatar.jpg"
 
     val settingOptions = listOf(
-        SettingOption(Icons.Default.Person, "Admin", "admin"),
+        SettingOption(Icons.Default.Person, "Admin", "admin_account"),
         SettingOption(Icons.Default.ShoppingCart, "Orders", "order"),
         SettingOption(Icons.Default.CreditCard, "Revenue", "revenue"),
         SettingOption(Icons.Default.StarBorder, "Reviews", "review"),
@@ -62,48 +72,43 @@ fun ProfileAdminScreen(
                     .background(Color(0xFFF7F7F7))
                     .padding(paddingValues)
             ) {
-                ProfileHeaderSection(userName, location, avatarUrl)
+
+                ProfileHeaderSection(userState.username, userState.email,
+                    userState.avatarUrl.toString()
+                )
                 Spacer(modifier = Modifier.height(24.dp))
+
                 ProfileSettingsSection(
                     title = "Account Settings",
                     settings = settingOptions,
                     onNavigate = { route -> navController.navigate(route) }
                 )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Button(
+                    onClick = {
+                        viewModel.logout()
+                        // Start lại MainActivity
+                        val intent = Intent(context, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
+                        // Kết thúc Activity hiện tại
+                        if (context is Activity) {
+                            context.finish()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text(text = "Log out", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+
             }
         }
     )
 }
 
-@Composable
-fun ProfileHeaderSection(userName: String, location: String, avatarUrl: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-    ) {
-        AsyncImage(
-            model = avatarUrl,
-            contentDescription = "Avatar",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(90.dp)
-                .clip(CircleShape)
-        )
-
-        Text(
-            text = userName,
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
-            fontFamily = MograFont
-        )
-
-        Text(
-            text = location,
-            color = Color.Gray,
-            fontSize = 16.sp
-        )
-    }
-}
 

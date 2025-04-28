@@ -1,8 +1,6 @@
 package com.example.foodorderingapplication.view.menu
 
-import android.os.Build
 import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,27 +9,27 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,15 +40,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
@@ -58,19 +58,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.CartItem
 import com.example.foodorderingapplication.view.HeaderSection
-import com.example.foodorderingapplication.view.MoMoPaymentWebView
 import com.example.foodorderingapplication.view.SubtotalAndButton
 import com.example.foodorderingapplication.viewmodel.CartViewModel
 import com.example.foodorderingapplication.viewmodel.CheckoutViewModel
-import com.example.foodorderingapplication.viewmodel.ShippingViewModel
-import java.text.DecimalFormat
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CheckoutScreen(
     viewModel: CheckoutViewModel = viewModel(),
@@ -81,10 +78,18 @@ fun CheckoutScreen(
     val total by viewModel.total.collectAsState()
     val selectedPromo by viewModel.selectedPromo.collectAsState()
 
-    LaunchedEffect(Unit) {
-        navController.currentBackStackEntry?.savedStateHandle?.getLiveData<String>("refresh")
-            ?.observe(navController.currentBackStackEntry!!) {
-                viewModel.reloadShippingAddress()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val savedStateHandle = currentBackStackEntry?.savedStateHandle
+
+    // Listen for the result
+    LaunchedEffect(savedStateHandle) {
+        savedStateHandle?.getStateFlow<Boolean?>("add_shopping_address", null)
+            ?.collect { updated ->
+                if (updated == true) {
+                    viewModel.reloadShippingAddress()
+                    // Reset để lần sau không bị gọi lại
+                    savedStateHandle["add_shopping_address"] = null
+                }
             }
     }
 
@@ -100,7 +105,9 @@ fun CheckoutScreen(
                 .padding(bottom = 120.dp)
         ) {
             // Header
-            HeaderSection("Checkout", navController)
+            HeaderSection("Checkout"){
+                navController.popBackStack()
+            }
 
             // Shipping, Delivery, Promos
             ShippingDeliveryPromosSection(viewModel, navController)
@@ -173,12 +180,10 @@ fun ShippingDeliveryPromosSection(viewModel: CheckoutViewModel, navController: N
         }
         HorizontalDivider()
 
-        // Hiển thị dialog chọn ngày giao hàng
         DeliveryTimeDialog(showDialog) { date, time ->
             viewModel.updateDeliveryTime(date, time)
         }
 
-        // Hiển thị dialog chọn mã giảm giá
         PromoDialog(showPromoDialog) { promo ->
             viewModel.updatePromo(promo)
         }
@@ -191,20 +196,32 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(14.dp),
+            .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = title, fontWeight = FontWeight.Bold)
+        Text(
+            text = title,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.width(14.dp))
 
         Row(
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = value, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, color = Color.Gray
+                text = value,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = Color.Gray,
+                modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = onClick) {
+            IconButton(
+                onClick = onClick,
+                modifier = Modifier.size(24.dp)
+            ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_arrow_forward),
                     contentDescription = "Arrow Forward",
@@ -214,6 +231,7 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
         }
     }
 }
+
 
 @Composable
 fun ItemsList(cartItemItems: List<CartItem>) {
@@ -241,7 +259,11 @@ fun ItemsList(cartItemItems: List<CartItem>) {
 }
 
 @Composable
-fun ItemRow(cartItem: CartItem) {
+fun ItemRow(cartItem: CartItem, viewModel: CartViewModel = viewModel()) {
+    var instructionText by remember { mutableStateOf(cartItem.instructions) }
+    var isFocused by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -252,20 +274,88 @@ fun ItemRow(cartItem: CartItem) {
             contentDescription = cartItem.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(60.dp)
+                .size(80.dp)
                 .clip(RoundedCornerShape(4.dp)),
             placeholder = painterResource(id = R.drawable.placeholder),
             error = painterResource(id = R.drawable.image_error)
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(cartItem.name, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.width(130.dp)
+        ) {
+            Text(cartItem.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                overflow = TextOverflow.Ellipsis)
+            Text("Portion: ${cartItem.portion}")
+            Text("Drink: ${cartItem.drink}")
             Text("Quantity: ${cartItem.quantity}", fontSize = 14.sp)
+
+            BasicTextField(
+                value = instructionText,
+                onValueChange = { instructionText = it },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        if (isFocused && !focusState.isFocused) {
+                            // Khi mất focus, cập nhật instructions
+                            viewModel.updateInstructions(cartItem.foodId, instructionText)
+                        }
+                        isFocused = focusState.isFocused
+                    },
+                textStyle = LocalTextStyle.current.copy(color = Color.Black, fontSize = 14.sp),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        // Khi người dùng bấm Done trên bàn phím
+                        viewModel.updateInstructions(cartItem.foodId, instructionText)
+                        focusManager.clearFocus()
+                    }
+                ),
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Note,
+                                contentDescription = "Note Icon",
+                                tint = Color.Gray,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .padding(end = 8.dp)
+                            )
+
+                            Box(modifier = Modifier.weight(1f)) {
+                                if (instructionText.isEmpty()) {
+                                    Text(
+                                        "Instructions...",
+                                        color = Color.Gray,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    }
+                }
+            )
         }
 
-        Text("$${"%.2f".format(cartItem.price)}", fontWeight = FontWeight.Bold)
+        Text(
+            "$${"%.2f".format(cartItem.price)}",
+            fontWeight = FontWeight.Bold
+        )
     }
 }
+
 
 @Composable
 fun OrderSummary(subtotal: Double, total: Double, isFreeShipping: Boolean) {
@@ -332,20 +422,19 @@ fun PaymentMethod(viewModel: CheckoutViewModel) {
             viewModel.updatePaymentMethod("COD")
         }
 
-        // Hiển thị WebView cho MoMo hoặc Bank Card
-        orderStatus?.let { status ->
-            if (status.startsWith("Chuyển hướng đến MoMo: ") || status.startsWith("Chuyển hướng đến thanh toán thẻ: ")) {
-                val paymentUrl = status.substringAfter(": ")
-                MoMoPaymentWebView(paymentUrl) { success ->
-                    viewModel.updateOrderStatus(
-                        orderId = status.substringAfter("orderId=").substringBefore("&"),
-                        status = if (success) "completed" else "failed"
-                    )
-                }
-            } else {
-                Text(status, color = if (status.contains("Lỗi")) Color.Red else Color.Green)
-            }
-        }
+//        orderStatus?.let { status ->
+//            if (status.startsWith("Chuyển hướng đến MoMo: ") || status.startsWith("Chuyển hướng đến thanh toán thẻ: ")) {
+//                val paymentUrl = status.substringAfter(": ")
+//                MoMoPaymentWebView(paymentUrl) { success ->
+//                    viewModel.updateOrderStatus(
+//                        orderId = status.substringAfter("orderId=").substringBefore("&"),
+//                        status = if (success) "completed" else "failed"
+//                    )
+//                }
+//            } else {
+//                Text(status, color = if (status.contains("Lỗi")) Color.Red else Color.Green)
+//            }
+//        }
     }
 }
 
@@ -363,11 +452,12 @@ fun PaymentOption(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            painter = painterResource(icon),
+        Image(
+            painter = painterResource(id = icon),
             contentDescription = title,
             modifier = Modifier.size(24.dp)
         )
+
         Spacer(modifier = Modifier.width(8.dp))
         Text(title, fontSize = 16.sp)
         Spacer(modifier = Modifier.weight(1f))

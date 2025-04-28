@@ -36,7 +36,6 @@ import com.example.foodorderingapplication.view.profile.ProfileScreen
 import com.example.foodorderingapplication.view.profile.ReviewScreen
 
 class MainActivity : ComponentActivity() {
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        enableEdgeToEdge()
@@ -46,7 +45,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavigationGraph() {
     val navController = rememberNavController()
@@ -85,16 +83,23 @@ fun NavigationGraph() {
         }
 
         composable("order") { OrderListScreen(navController = navController) }
-        composable("order_detail") { OrderDetailScreen(navController = navController) }
+        composable("order_detail/{orderId}") { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            OrderDetailScreen(
+                navController = navController,
+                orderId = orderId
+            )
+        }
+
         composable("my_account") { MyAccountScreen(navController = navController) }
         composable("payment_method") { PaymentMethodScreen(navController = navController) }
         composable("my_review") { MyReviewScreen(navController = navController) }
         composable("thank_you") { ThankYouScreen(navController = navController) }
+        composable("about_us") { ThankYouScreen(navController = navController) }
 
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {

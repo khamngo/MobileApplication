@@ -30,9 +30,11 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -52,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +78,10 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun MenuScreen(navController: NavController) {
+fun MenuScreen(navController: NavController, viewModel: FoodViewModel = viewModel()) {
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+
     Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
         Box(
             modifier = Modifier
@@ -89,12 +95,21 @@ fun MenuScreen(navController: NavController) {
 
             ) {
                 item { TopBar() }
-                item { BannerSlider() }
-                item { CategorySection(navController) }
-                item { FoodListSection(navController = navController) }
-
+                if (searchQuery.isNotBlank() && searchResults.isNotEmpty()) {
+                    item {
+                        searchResults.forEach { food ->
+                            FoodItems(
+                                food,
+                                onClick = { navController.navigate("food_detail/${food.id}") })
+                            HorizontalDivider(modifier = Modifier.padding(12.dp))
+                        }
+                    }
+                } else {
+                    item { BannerSlider() }
+                    item { CategorySection(navController) }
+                    item { FoodListSection(navController = navController) }
+                }
             }
-
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -144,12 +159,13 @@ fun TopBar() {
 }
 
 @Composable
-fun SearchBar() {
-    var searchText by remember { mutableStateOf("") }
+fun SearchBar(viewModel: FoodViewModel = viewModel()) {
+    val searchText by viewModel.searchQuery.collectAsState()
+
     TextField(
         value = searchText,
-        onValueChange = { searchText = it },
-        placeholder = { Text(text = "Search", color = Color.Gray, fontSize = 18.sp) },
+        onValueChange = { viewModel.onSearchTextChange(it) },
+        placeholder = { Text("Search", color = Color.Gray, fontSize = 18.sp) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
@@ -169,7 +185,6 @@ fun SearchBar() {
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,
             errorIndicatorColor = Color.Transparent,
-            // ✅ Nền trắng
             unfocusedContainerColor = Color.White,
             focusedContainerColor = Color.White,
             disabledContainerColor = Color.White
@@ -177,14 +192,15 @@ fun SearchBar() {
     )
 }
 
+
 @Composable
 fun BannerSlider() {
     val bannerImages = listOf(
         R.drawable.banner_image,
-        R.drawable.banner_image,
-        R.drawable.banner_image,
-        R.drawable.banner_image,
-        R.drawable.banner_image
+        R.drawable.banner_image2,
+        R.drawable.banner_image3,
+        R.drawable.banner_image4,
+        R.drawable.banner_image5
     )
 
     val bannerTitles = listOf(
@@ -227,7 +243,8 @@ fun BannerSlider() {
                 contentDescription = "Banner ${page + 1}",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(120.dp),
+                contentScale = ContentScale.Crop
             )
         }
 
@@ -363,7 +380,6 @@ fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .width(160.dp)
-            .height(200.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(6.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -391,18 +407,28 @@ fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .padding(top = 6.dp),
+                fontSize = 16.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = foodItem.description,
+                color = Color.Gray,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .padding(top = 4.dp),
                 fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
-                    .padding(horizontal = 8.dp)
+                    .padding(8.dp)
                     .fillMaxWidth()
             ) {
                 Text(
@@ -452,7 +478,6 @@ fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
 
             Box(
                 modifier = Modifier
-                    .padding(8.dp)
                     .background(Color.White, shape = RoundedCornerShape(16.dp))
                     .padding(horizontal = 8.dp, vertical = 6.dp)
                     .align(Alignment.BottomStart)
@@ -467,7 +492,6 @@ fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .padding(8.dp)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
                     .align(Alignment.TopEnd)
             ) {
                 Icon(
@@ -479,18 +503,19 @@ fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
             }
         }
 
-        // Tên món ăn & Đánh giá
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = foodItem.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
+
             Row {
                 Icon(
                     imageVector = Icons.Default.Star,
@@ -506,6 +531,15 @@ fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
                 )
             }
         }
+        Text(
+            text = foodItem.description,
+            color = Color.Gray,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
     }
 }
 
@@ -514,63 +548,78 @@ fun DraggableCartIcon(viewModel: CartViewModel = viewModel(), navController: Nav
     val cartItems by viewModel.cartItemItems.collectAsState()
 
     val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
+    val iconSize = 70.dp
+
     LaunchedEffect(Unit) {
-        offsetX = with(density) { -10.dp.toPx() }
-        offsetY = with(density) { -10.dp.toPx() }
+        offsetX = with(density) { (screenWidth - iconSize - 10.dp).toPx() }
+        offsetY =
+            with(density) { (screenHeight - iconSize - 80.dp).toPx() } // chừa space cho bottom bar nếu có
     }
 
     Box(
         modifier = Modifier
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-            .size(70.dp)
+            .fillMaxSize()
     ) {
         Box(
             modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFFFD700))
-                .align(Alignment.Center)
-                .clickable { navController.navigate("cart") }
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        offsetX += dragAmount.x
-                        offsetY += dragAmount.y
-                    }
-                },
-            contentAlignment = Alignment.Center
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .size(iconSize)
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_shopping_cart),
-                contentDescription = "Cart Icon",
+            Box(
                 modifier = Modifier
-                    .size(35.dp),
-                tint = Color.White
-            )
-        }
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFFD700))
+                    .align(Alignment.Center)
+                    .clickable { navController.navigate("cart") }
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            val iconPxSize = with(density) { iconSize.toPx() }
 
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .align(Alignment.TopEnd)
-                .clip(CircleShape)
-                .background(Color.Black),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "${cartItems.size}",
-                color = Color.White,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize
-            )
+                            val screenWidthPx = with(density) { screenWidth.toPx() }
+                            val screenHeightPx = with(density) { screenHeight.toPx() }
+                            val bottomBarHeightPx = with(density) { 80.dp.toPx() }
+
+                            val maxX = screenWidthPx - iconPxSize
+                            val maxY = screenHeightPx - iconPxSize - bottomBarHeightPx
+
+                            offsetX = (offsetX + dragAmount.x).coerceIn(0f, maxX)
+                            offsetY = (offsetY + dragAmount.y).coerceIn(0f, maxY)
+                        }
+
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_shopping_cart),
+                    contentDescription = "Cart Icon",
+                    modifier = Modifier.size(35.dp),
+                    tint = Color.White
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .align(Alignment.TopEnd)
+                    .clip(CircleShape)
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "${cartItems.size}",
+                    color = Color.White,
+                    fontSize = MaterialTheme.typography.bodySmall.fontSize
+                )
+            }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TopBar()
 }

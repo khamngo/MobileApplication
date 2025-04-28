@@ -65,7 +65,9 @@ fun RevenueScreen(
             .fillMaxSize()
             .background(Color.White)
     ) {
-        HeaderSection("Revenue", navController)
+        HeaderSection("Revenue"){
+            navController.popBackStack()
+        }
         Spacer(modifier = Modifier.height(8.dp))
 
         Column(

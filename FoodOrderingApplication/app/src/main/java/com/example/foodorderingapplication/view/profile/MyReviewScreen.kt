@@ -49,7 +49,9 @@ fun MyReviewScreen(
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection("My Reivews", navController)
+        HeaderSection("My Reivews"){
+            navController.popBackStack()
+        }
 
         LazyColumn(
             modifier = Modifier

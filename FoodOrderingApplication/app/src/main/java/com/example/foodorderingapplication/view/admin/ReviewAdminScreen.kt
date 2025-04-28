@@ -52,7 +52,9 @@ fun ReviewListScreen(navController: NavController) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Header
-        HeaderSection("Reviews", navController)
+        HeaderSection("Reviews"){
+            navController.popBackStack()
+        }
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),

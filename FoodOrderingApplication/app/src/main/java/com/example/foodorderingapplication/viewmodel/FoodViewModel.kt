@@ -2,10 +2,14 @@ package com.example.foodorderingapplication.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FoodItem
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.*
 
 class FoodViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -31,11 +35,19 @@ class FoodViewModel : ViewModel() {
     private val _dealFoods = MutableStateFlow<List<FoodItem>>(emptyList())
     val dealFoods: StateFlow<List<FoodItem>> = _dealFoods
 
+    // ✅ Thêm searchText và searchResults
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _searchResults = MutableStateFlow<List<FoodItem>>(emptyList())
+    val searchResults: StateFlow<List<FoodItem>> = _searchResults
+
     init {
         fetchFoods(null) // Lấy tất cả món ăn
         fetchFoods("popular")
         fetchFoods("bestseller")
         fetchFoods("deal")
+        observeSearchQuery()
     }
 
     fun fetchFoods(tag: String?) {
@@ -63,7 +75,6 @@ class FoodViewModel : ViewModel() {
 
             val foods = snapshot.map { doc ->
                 val tags = doc.get("tags") as? List<String> ?: emptyList()
-                Log.d("FOOD_TAG_LOG", "Food: ${doc.getString("name")}, Tags: $tags, Doc: ${doc.data}")
                 FoodItem(
                     id = doc.id,
                     name = doc.getString("name") ?: "",
@@ -75,9 +86,11 @@ class FoodViewModel : ViewModel() {
                 )
             }
 
-            Log.d("FoodViewModel", "Fetched ${foods.size} items for tag: $tag")
             when (tag) {
-                null -> _exploreFoods.value = foods
+                null ->{
+                    _searchResults.value = foods
+                    _exploreFoods.value = foods
+                }
                 "popular" -> _popularFoods.value = foods
                 "bestseller" -> _bestsellerFoods.value = foods
                 "deal" -> _dealFoods.value = foods
@@ -96,11 +109,26 @@ class FoodViewModel : ViewModel() {
             }
     }
 
+    fun onSearchTextChange(query: String) {
+        _searchQuery.value = query
+    }
 
-    private val _selectedFood = MutableStateFlow<FoodItem?>(null)
-    val selectedFood: StateFlow<FoodItem?> = _selectedFood
-
-    fun selectFoodById(foodId: String) {
-        _selectedFood.value = _foods.value.find { it.id.trim() == foodId.trim() }
+    @OptIn(FlowPreview::class)
+    private fun observeSearchQuery() {
+        viewModelScope.launch {
+            _searchQuery
+                .debounce(500) // 300ms debounce
+                .distinctUntilChanged()
+                .collectLatest { query ->
+                    if (query.isBlank()) {
+                        _searchResults.value = _exploreFoods.value
+                    } else {
+                        _searchResults.value = _exploreFoods.value.filter { food ->
+                            food.name.contains(query, ignoreCase = true) ||
+                                    food.description.contains(query, ignoreCase = true)
+                        }
+                    }
+                }
+        }
     }
 }
