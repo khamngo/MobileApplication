@@ -8,5 +8,6 @@ data class ShippingAddress(
     val district : String = "",
     val ward: String = "",
     val street: String = "",
+    val restaurant: RestaurantItem = RestaurantItem(),
     val isDefault: Boolean = false
 )

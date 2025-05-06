@@ -3,13 +3,17 @@ package com.example.foodorderingapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FieldErrors
+import com.example.foodorderingapplication.model.RestaurantItem
 import com.example.foodorderingapplication.model.ShippingAddress
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class ShippingViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -31,14 +35,31 @@ class ShippingViewModel : ViewModel() {
         loadShippingAddress()
     }
 
+    fun selectRestaurant(restaurant: RestaurantItem) {
+        val current = _shippingAddress.value
+        _shippingAddress.value = current.copy(restaurant = restaurant)
+        clearFieldErrors()
+    }
+
     // Tải địa chỉ từ Firebase
     private fun loadShippingAddress() {
         val userId = auth.currentUser?.uid ?: return
+
         viewModelScope.launch {
             db.collection("users").document(userId)
                 .collection("shippingAddress").document("default")
                 .get()
                 .addOnSuccessListener { doc ->
+                    val restaurantMap = doc.get("restaurant") as? Map<*, *>
+                    val restaurant = if (restaurantMap != null) {
+                        RestaurantItem(
+                            name = restaurantMap["name"] as? String ?: "",
+                            address = restaurantMap["address"] as? String ?: "",
+                            phone = restaurantMap["phone"] as? String ?: "",
+                            hours = restaurantMap["hours"] as? String ?: ""
+                        )
+                    } else RestaurantItem()
+
                     if (doc.exists()) {
                         _shippingAddress.value = ShippingAddress(
                             firstName = doc.getString("firstName") ?: "",
@@ -48,39 +69,54 @@ class ShippingViewModel : ViewModel() {
                             district = doc.getString("district") ?: "",
                             ward = doc.getString("ward") ?: "",
                             street = doc.getString("street") ?: "",
-                            isDefault = doc.getBoolean("isDefault") ?: false
+                            restaurant = restaurant,
+                            isDefault = doc.getBoolean("isDefault") == true
                         )
                     }
                 }
                 .addOnFailureListener { e ->
-                    _errorMessage.value = "Lỗi khi tải địa chỉ: ${e.message}"
+                        _errorMessage.value = "Error loading address: ${e.message}"
                 }
         }
     }
 
-    // Cập nhật các trường địa chỉ
-    fun updateShippingField(
-        firstName: String,
-        lastName: String,
-        phoneNumber: String,
-        province: String,
-        district: String,
-        ward: String,
-        street: String,
-        isDefault: Boolean
-    ) {
-        _shippingAddress.value = ShippingAddress(
-            firstName = firstName,
-            lastName = lastName,
-            phoneNumber = phoneNumber,
-            province = province,
-            district = district,
-            ward = ward,
-            street = street,
-            isDefault = isDefault
-        )
-        // Xóa lỗi khi người dùng cập nhật trường
+    fun onFirstNameChange(newFirstName: String) {
+        _shippingAddress.value = _shippingAddress.value.copy(firstName = newFirstName)
         clearFieldErrors()
+    }
+
+    fun onLastNameChange(newLastName: String) {
+        _shippingAddress.value = _shippingAddress.value.copy(lastName = newLastName)
+        clearFieldErrors()
+    }
+
+    fun onPhoneNumberChange(newPhone: String) {
+        _shippingAddress.value = _shippingAddress.value.copy(phoneNumber = newPhone)
+        clearFieldErrors()
+    }
+
+    fun onProvinceChange(newProvince: String) {
+        _shippingAddress.value = _shippingAddress.value.copy(province = newProvince)
+        clearFieldErrors()
+    }
+
+    fun onDistrictChange(newDistrict: String) {
+        _shippingAddress.value = _shippingAddress.value.copy(district = newDistrict)
+        clearFieldErrors()
+    }
+
+    fun onWardChange(newWard: String) {
+        _shippingAddress.value = _shippingAddress.value.copy(ward = newWard)
+        clearFieldErrors()
+    }
+
+    fun onStreetChange(newStreet: String) {
+        _shippingAddress.value = _shippingAddress.value.copy(street = newStreet)
+        clearFieldErrors()
+    }
+
+    fun onIsDefaultChange(isDefault: Boolean) {
+        _shippingAddress.value = _shippingAddress.value.copy(isDefault = isDefault)
     }
 
     // Validate và lưu địa chỉ vào Firebase
@@ -89,7 +125,6 @@ class ShippingViewModel : ViewModel() {
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        // Kiểm tra null/empty và validate số điện thoại
         val errors = FieldErrors(
             firstNameError = _shippingAddress.value.firstName.isBlank(),
             lastNameError = _shippingAddress.value.lastName.isBlank(),
@@ -121,8 +156,15 @@ class ShippingViewModel : ViewModel() {
             "district" to _shippingAddress.value.district,
             "ward" to _shippingAddress.value.ward,
             "street" to _shippingAddress.value.street,
+            "restaurant" to hashMapOf(
+                "name" to _shippingAddress.value.restaurant.name,
+                "address" to _shippingAddress.value.restaurant.address,
+                "phone" to _shippingAddress.value.restaurant.phone,
+                "hours" to _shippingAddress.value.restaurant.hours
+            ),
             "isDefault" to _shippingAddress.value.isDefault
         )
+
 
         viewModelScope.launch {
             db.collection("users").document(userId)
@@ -134,7 +176,7 @@ class ShippingViewModel : ViewModel() {
                     onSuccess()
                 }
                 .addOnFailureListener { e ->
-                    _errorMessage.value = "Lỗi lưu địa chỉ: ${e.message}"
+                    _errorMessage.value = "Error loading address: ${e.message}"
                     onFailure(e)
                 }
         }

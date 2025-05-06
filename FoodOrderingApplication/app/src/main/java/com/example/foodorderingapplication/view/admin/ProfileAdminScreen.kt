@@ -18,13 +18,18 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAddAlt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +68,9 @@ fun ProfileAdminScreen(
         SettingOption(Icons.Default.PersonAddAlt, "New account", "new_account")
     )
 
+    // State để hiển thị AlertDialog xác nhận đăng xuất
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         bottomBar = { BottomNavBar(navController, bottomNavItems) },
         content = { paddingValues ->
@@ -73,7 +81,9 @@ fun ProfileAdminScreen(
                     .padding(paddingValues)
             ) {
 
-                ProfileHeaderSection(userState.username, userState.email,
+                ProfileHeaderSection(
+                    userState.username,
+                    userState.email,
                     userState.avatarUrl.toString()
                 )
                 Spacer(modifier = Modifier.height(24.dp))
@@ -88,15 +98,7 @@ fun ProfileAdminScreen(
 
                 Button(
                     onClick = {
-                        viewModel.logout()
-                        // Start lại MainActivity
-                        val intent = Intent(context, MainActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        context.startActivity(intent)
-                        // Kết thúc Activity hiện tại
-                        if (context is Activity) {
-                            context.finish()
-                        }
+                        showLogoutDialog = true
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -105,10 +107,35 @@ fun ProfileAdminScreen(
                 ) {
                     Text(text = "Log out", color = Color.White, fontWeight = FontWeight.Bold)
                 }
+            }
 
+            // Hiển thị AlertDialog nếu người dùng nhấn nút "Log out"
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    title = { Text("Xác nhận đăng xuất") },
+                    text = { Text("Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showLogoutDialog = false
+                            viewModel.logout()
+                            val intent = Intent(context, MainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            context.startActivity(intent)
+                            if (context is Activity) {
+                                context.finish()
+                            }
+                        }) {
+                            Text("Đồng ý")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) {
+                            Text("Hủy")
+                        }
+                    }
+                )
             }
         }
     )
 }
-
-

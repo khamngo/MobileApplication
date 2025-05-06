@@ -1,6 +1,6 @@
 package com.example.foodorderingapplication.view.home
 
-import android.R.attr.fontWeight
+import android.R.attr.password
 import android.app.Activity
 import android.content.Intent
 import android.widget.Toast
@@ -8,7 +8,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,15 +27,13 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,36 +57,35 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.AdminActivity
-import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.auth.createGoogleSignInClient
 import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.common.io.Files.append
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 
 @Composable
-fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
+fun SignInScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     val context = LocalContext.current
     val activity = context as? Activity
     val signInSuccess by authViewModel.signInSuccess.collectAsState()
     val errorMessage by authViewModel.errorMessage.collectAsState()
     val userRole by authViewModel.userRole.collectAsState()
+    val username by authViewModel.username.collectAsState()
+    val email by authViewModel.email.collectAsState()
+    val phone by authViewModel.phone.collectAsState()
+    val password by authViewModel.password.collectAsState()
+    val confirmPassword by authViewModel.confirmPassword.collectAsState()
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    val isLoading by authViewModel.isLoading.collectAsState()
 
     // Google Sign-In
-    val auth = FirebaseAuth.getInstance()
     val googleSignInClient = remember { createGoogleSignInClient(context) }
 
     val googleSignInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -196,11 +192,9 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
                 ) {
                     Text("Sign in", fontSize = 36.sp, fontWeight = FontWeight.Bold)
 
-                    // Ô nhập username
-                    var username by rememberSaveable { mutableStateOf("") }
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
+                        value = email,
+                        onValueChange = authViewModel::onEmailChange,
                         label = { Text("Username or Email") },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -208,12 +202,9 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
                         shape = RoundedCornerShape(8.dp)
                     )
 
-                    // Ô nhập password
-                    var password by rememberSaveable { mutableStateOf("") }
-                    var passwordVisible by rememberSaveable { mutableStateOf(false) }
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = authViewModel::onPasswordChange,
                         label = { Text("Password") },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -231,21 +222,30 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
 
                     Button(
                         onClick = {
-                            // TODO: Xử lý đăng nhập bằng email/password nếu cần
-                            Toast.makeText(context, "Email/Password login not implemented", Toast.LENGTH_SHORT).show()
+                            authViewModel.signInWithEmailAndPassword{
+                                navController.navigate(BottomNavItem.Home.route)
+                            }
                         },
+
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCC00))
                     ) {
-                        Text(
-                            "Sign In",
-                            fontSize = 20.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }else {
+                            Text(
+                                "Sign In",
+                                fontSize = 20.sp,
+                                color = White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

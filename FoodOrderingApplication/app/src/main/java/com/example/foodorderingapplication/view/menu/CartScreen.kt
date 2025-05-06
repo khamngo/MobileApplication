@@ -1,9 +1,11 @@
 package com.example.foodorderingapplication.view.menu
 
 import android.R.attr.onClick
+import android.R.attr.textStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -45,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -61,6 +66,7 @@ import coil.compose.AsyncImage
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.model.CartItem
+import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.SubtotalAndButton
 import com.example.foodorderingapplication.viewmodel.CartViewModel
@@ -75,7 +81,6 @@ fun CartScreen(
     val cartItems by viewModel.cartItemItems.collectAsState()
     val total by viewModel.total.collectAsState()
     val foodItems by foodViewModel.popularFoods.collectAsState()
-    val foods by foodViewModel.foods.collectAsState()
 
     Box(
         modifier = Modifier
@@ -94,7 +99,7 @@ fun CartScreen(
 
             // Cart Items
             Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -151,33 +156,35 @@ fun CartItemView(item: CartItem, viewModel: CartViewModel, onClick: () -> Unit) 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Xác nhận xóa") },
-            text = { Text("Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng không?") },
+                title = { Text("Confirm deletion") },
+            text = { Text("Are you sure you want to remove this product from your cart?") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.removeFromCart(item.foodId)
                     showDialog = false
                 }) {
-                    Text("Xóa", color = Color.Red)
+                    Text("Delete", color = Color.Red)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("Hủy")
+                    Text("Cancel")
                 }
             }
         )
     }
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .background(Color.White)
-        .padding(12.dp))
- {
+
+    Card(
+        colors = CardDefaults.cardColors(Color.White),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+    ){
         Row(
             verticalAlignment = Alignment.Top,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .clickable { onClick() }
         ) {
             AsyncImage(
@@ -280,66 +287,76 @@ fun CartItemView(item: CartItem, viewModel: CartViewModel, onClick: () -> Unit) 
             }
         }
 
-     Spacer(modifier = Modifier.width(16.dp))
+        InstructionInput(item, viewModel)
+    }
+}
 
-        BasicTextField(
-            value = instructionText,
-            onValueChange = { instructionText = it },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged { focusState ->
-                    if (isFocused && !focusState.isFocused) {
-                        // Khi mất focus, cập nhật instructions
-                        viewModel.updateInstructions(item.foodId, instructionText)
-                    }
-                    isFocused = focusState.isFocused
-                },
-            textStyle = LocalTextStyle.current.copy(color = Color.Black, fontSize = 14.sp),
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    // Khi người dùng bấm Done trên bàn phím
+@Composable
+fun InstructionInput(
+    item: CartItem,
+    viewModel: CartViewModel
+) {
+    val focusManager = LocalFocusManager.current
+    var instructionText by remember { mutableStateOf(item.instructions) }
+    var isFocused by remember { mutableStateOf(false) }
+
+    BasicTextField(
+        value = instructionText,
+        onValueChange = { instructionText = it },
+        singleLine = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .onFocusChanged { focusState ->
+                if (isFocused && !focusState.isFocused) {
                     viewModel.updateInstructions(item.foodId, instructionText)
-                    focusManager.clearFocus()
                 }
-            ),
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                isFocused = focusState.isFocused
+            },
+        textStyle = LocalTextStyle.current.copy(color = Color.Black, fontSize = 14.sp),
+        keyboardOptions = KeyboardOptions.Default.copy(
+            imeAction = ImeAction.Done
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                viewModel.updateInstructions(item.foodId, instructionText)
+                focusManager.clearFocus()
+            }
+        ),
+        decorationBox = { innerTextField ->
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                    .padding(6.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Note,
-                            contentDescription = "Note Icon",
-                            tint = Color.Gray,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .padding(end = 8.dp)
-                        )
+                    Icon(
+                        imageVector = Icons.Filled.Note,
+                        contentDescription = "Note Icon",
+                        tint = Color.Gray,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .padding(end = 8.dp)
+                    )
 
-                        Box(modifier = Modifier.weight(1f)) {
-                            if (instructionText.isEmpty()) {
-                                Text(
-                                    "Instructions...",
-                                    color = Color.Gray,
-                                    fontSize = 14.sp
-                                )
-                            }
-                            innerTextField()
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (instructionText.isEmpty()) {
+                            Text(
+                                "Instructions...",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
                         }
+                        innerTextField()
                     }
                 }
             }
-        )
-    }
+        }
+    )
 }
+
 
 

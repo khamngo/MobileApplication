@@ -478,14 +478,15 @@ fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
 
             Box(
                 modifier = Modifier
+                    .offset(x = 8.dp, y = (-6).dp)
                     .background(Color.White, shape = RoundedCornerShape(16.dp))
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
                     .align(Alignment.BottomStart)
             ) {
                 Text(
                     text = "$${foodItem.price}",
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                 )
             }
 

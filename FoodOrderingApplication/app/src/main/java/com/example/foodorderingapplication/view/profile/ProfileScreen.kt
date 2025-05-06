@@ -1,5 +1,7 @@
 package com.example.foodorderingapplication.view.profile
 
+import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,26 +23,35 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.foodorderingapplication.MainActivity
+import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.SettingOption
 import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.view.BottomNavBar
@@ -78,21 +89,48 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
 
             ProfileSettingsSection(
                 title = "General Settings",
-                settings = listOf(SettingOption(Icons.Default.Info, "About us", "about_as")),
+                settings = listOf(SettingOption(Icons.Default.Info, "About us", "about_us")),
                 onNavigate = { route -> navController.navigate(route) }
             )
 
             Spacer(modifier = Modifier.weight(1f))
-
+            var showLogoutDialog by remember { mutableStateOf(false) }
+            val context = LocalContext.current
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    title = { Text("Xác nhận đăng xuất") },
+                    text = { Text("Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showLogoutDialog = false
+                            viewModel.logout()
+                            navController.navigate("login") {
+                                // Clear the back stack so the user can't go back to the Home screen
+                                popUpTo("intro") { inclusive = true }
+                            }
+//                            val intent = Intent(context, MainActivity::class.java)
+//                            intent.flags =
+//                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//                            context.startActivity(intent)
+//                            if (context is Activity) {
+//                                context.finish()
+//                            }
+                        }) {
+                            Text("Đồng ý")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) {
+                            Text("Hủy")
+                        }
+                    }
+                )
+            }
             // Logout Button
             Button(
                 onClick = {
-                    // Handle Logout action here, for example, sign out from Firebase
-                    viewModel.logout()
-                    navController.navigate("login") {
-                        // Clear the back stack so the user can't go back to the Home screen
-                        popUpTo("intro") { inclusive = true }
-                    }
+                        showLogoutDialog  =true
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -115,7 +153,12 @@ fun ProfileHeaderSection(userName: String, location: String, avatarUrl: String) 
             .padding(top = 16.dp)
     ) {
         AsyncImage(
-            model = avatarUrl,
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(avatarUrl)
+                .crossfade(true)
+                .placeholder(R.drawable.ic_placeholder_avatar) // ảnh mặc định khi loading
+                .error(R.drawable.ic_placeholder_avatar)       // ảnh khi lỗi hoặc null
+                .build(),
             contentDescription = "Avatar",
             contentScale = ContentScale.Crop,
             modifier = Modifier

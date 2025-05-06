@@ -1,6 +1,8 @@
 package com.example.foodorderingapplication.view.menu
 
+import android.os.Build
 import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,9 +13,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -21,11 +26,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,14 +68,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
-import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.CartItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.SubtotalAndButton
 import com.example.foodorderingapplication.viewmodel.CartViewModel
 import com.example.foodorderingapplication.viewmodel.CheckoutViewModel
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CheckoutScreen(
     viewModel: CheckoutViewModel = viewModel(),
@@ -77,6 +89,7 @@ fun CheckoutScreen(
     val subtotal by viewModel.subtotal.collectAsState()
     val total by viewModel.total.collectAsState()
     val selectedPromo by viewModel.selectedPromo.collectAsState()
+    val taxes = viewModel.taxes
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val savedStateHandle = currentBackStackEntry?.savedStateHandle
@@ -105,25 +118,35 @@ fun CheckoutScreen(
                 .padding(bottom = 120.dp)
         ) {
             // Header
-            HeaderSection("Checkout"){
+            HeaderSection("Checkout") {
                 navController.popBackStack()
             }
 
             // Shipping, Delivery, Promos
             ShippingDeliveryPromosSection(viewModel, navController)
 
+            Spacer(modifier = Modifier.height(6.dp))
+
             // Items List
             ItemsList(cartItems)
 
+            Spacer(modifier = Modifier.height(6.dp))
+
             // Order Summary
             OrderSummary(
+                taxes = taxes,
                 subtotal = subtotal,
                 total = total,
                 isFreeShipping = selectedPromo == "Free Shipping"
             )
 
+            Spacer(modifier = Modifier.height(6.dp))
+
             // Payment Method
             PaymentMethod(viewModel)
+
+            Spacer(modifier = Modifier.height(6.dp))
+
         }
 
         // Subtotal & Button
@@ -144,6 +167,7 @@ fun CheckoutScreen(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ShippingDeliveryPromosSection(viewModel: CheckoutViewModel, navController: NavController) {
     val showDialog = remember { mutableStateOf(false) }
@@ -159,9 +183,11 @@ fun ShippingDeliveryPromosSection(viewModel: CheckoutViewModel, navController: N
         shippingAddress.province
     ).filter { it.isNotBlank() }.joinToString(", ")
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        HorizontalDivider()
+    val subtotal by viewModel.subtotal.collectAsState()
 
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .background(Color.White)) {
         ShippingRow(
             "SHIPPING",
             fullAddress.ifEmpty { "Add shipping address" }
@@ -184,8 +210,8 @@ fun ShippingDeliveryPromosSection(viewModel: CheckoutViewModel, navController: N
             viewModel.updateDeliveryTime(date, time)
         }
 
-        PromoDialog(showPromoDialog) { promo ->
-            viewModel.updatePromo(promo)
+        PromoDialog(showDialog = showPromoDialog, subtotal = subtotal) {
+            viewModel.updatePromo(it)
         }
     }
 }
@@ -200,10 +226,15 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            fontWeight = FontWeight.Bold
-        )
+        // Title with fixed width to avoid shifting when text length changes
+        Box(
+            modifier = Modifier.width(80.dp)
+        ) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         Spacer(modifier = Modifier.width(14.dp))
 
@@ -232,18 +263,20 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
     }
 }
 
-
 @Composable
-fun ItemsList(cartItemItems: List<CartItem>) {
+fun ItemsList(cartItemItems: List<CartItem>, viewModel: CartViewModel = viewModel()) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .background(Color.White)
+
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -254,27 +287,27 @@ fun ItemsList(cartItemItems: List<CartItem>) {
 
         cartItemItems.forEach { cart ->
             ItemRow(cart)
+            InstructionInput(cart, viewModel)
         }
+
     }
 }
 
 @Composable
-fun ItemRow(cartItem: CartItem, viewModel: CartViewModel = viewModel()) {
-    var instructionText by remember { mutableStateOf(cartItem.instructions) }
-    var isFocused by remember { mutableStateOf(false) }
-    val focusManager = LocalFocusManager.current
-
+fun ItemRow(cartItem: CartItem) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
         AsyncImage(
             model = cartItem.imageUrl,
             contentDescription = cartItem.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(80.dp)
+                .size(70.dp)
                 .clip(RoundedCornerShape(4.dp)),
             placeholder = painterResource(id = R.drawable.placeholder),
             error = painterResource(id = R.drawable.image_error)
@@ -282,71 +315,15 @@ fun ItemRow(cartItem: CartItem, viewModel: CartViewModel = viewModel()) {
 
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.width(130.dp)
+            modifier = Modifier.fillMaxWidth(0.4f)
         ) {
-            Text(cartItem.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                overflow = TextOverflow.Ellipsis)
+            Text(
+                cartItem.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Text("Portion: ${cartItem.portion}")
             Text("Drink: ${cartItem.drink}")
             Text("Quantity: ${cartItem.quantity}", fontSize = 14.sp)
-
-            BasicTextField(
-                value = instructionText,
-                onValueChange = { instructionText = it },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focusState ->
-                        if (isFocused && !focusState.isFocused) {
-                            // Khi mất focus, cập nhật instructions
-                            viewModel.updateInstructions(cartItem.foodId, instructionText)
-                        }
-                        isFocused = focusState.isFocused
-                    },
-                textStyle = LocalTextStyle.current.copy(color = Color.Black, fontSize = 14.sp),
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        // Khi người dùng bấm Done trên bàn phím
-                        viewModel.updateInstructions(cartItem.foodId, instructionText)
-                        focusManager.clearFocus()
-                    }
-                ),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Note,
-                                contentDescription = "Note Icon",
-                                tint = Color.Gray,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(end = 8.dp)
-                            )
-
-                            Box(modifier = Modifier.weight(1f)) {
-                                if (instructionText.isEmpty()) {
-                                    Text(
-                                        "Instructions...",
-                                        color = Color.Gray,
-                                        fontSize = 14.sp
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        }
-                    }
-                }
-            )
         }
 
         Text(
@@ -358,25 +335,32 @@ fun ItemRow(cartItem: CartItem, viewModel: CartViewModel = viewModel()) {
 
 
 @Composable
-fun OrderSummary(subtotal: Double, total: Double, isFreeShipping: Boolean) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+fun OrderSummary(taxes: Double, subtotal: Double, total: Double, isFreeShipping: Boolean) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .background(Color.White)
     ) {
-        Text("Order Summary", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        SummaryRow("Subtotal", "$${"%.2f".format(subtotal)}")
-        SummaryRow("Shipping total", if (isFreeShipping) "Free" else "$2.00")
-        SummaryRow("Taxes", "$2.0")
-        HorizontalDivider()
-        SummaryRow(
-            "Total",
-            "$${"%.2f".format(total)}",
-            Color.Red,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text("Order Summary", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            SummaryRow("Subtotal", "$${"%.2f".format(subtotal)}")
+            SummaryRow("Shipping total", if (isFreeShipping) "Free" else "$2.00")
+            SummaryRow("Taxes", "$taxes")
+            HorizontalDivider()
+            SummaryRow(
+                "Total",
+                "$${"%.2f".format(total)}",
+                Color.Red,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+        }
     }
 }
 
@@ -391,6 +375,7 @@ fun SummaryRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(Color.White)
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -404,23 +389,28 @@ fun PaymentMethod(viewModel: CheckoutViewModel) {
     val paymentMethod by viewModel.paymentMethod.collectAsState()
     val orderStatus by viewModel.orderStatus.collectAsState()
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Payment Method", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        PaymentOption(
-            icon = R.drawable.momo_method, // Icon MoMo
-            title = "MoMo",
-            selected = paymentMethod == "MoMo"
-        ) {
-            viewModel.updatePaymentMethod("MoMo")
-        }
+    Box(modifier = Modifier
+        .background(Color.White)
+        .fillMaxWidth()) {
+        Column(modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()) {
+            Text("Payment Method", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            PaymentOption(
+                icon = R.drawable.momo_method, // Icon MoMo
+                title = "MoMo",
+                selected = paymentMethod == "MoMo"
+            ) {
+                viewModel.updatePaymentMethod("MoMo")
+            }
 
-        PaymentOption(
-            icon = R.drawable.cod_method,
-            title = "Cash on Delivery",
-            selected = paymentMethod == "COD"
-        ) {
-            viewModel.updatePaymentMethod("COD")
-        }
+            PaymentOption(
+                icon = R.drawable.cod_method,
+                title = "Cash on Delivery",
+                selected = paymentMethod == "COD"
+            ) {
+                viewModel.updatePaymentMethod("COD")
+            }
 
 //        orderStatus?.let { status ->
 //            if (status.startsWith("Chuyển hướng đến MoMo: ") || status.startsWith("Chuyển hướng đến thanh toán thẻ: ")) {
@@ -435,6 +425,7 @@ fun PaymentMethod(viewModel: CheckoutViewModel) {
 //                Text(status, color = if (status.contains("Lỗi")) Color.Red else Color.Green)
 //            }
 //        }
+        }
     }
 }
 
@@ -449,7 +440,7 @@ fun PaymentOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(8.dp),
+            .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
@@ -468,10 +459,34 @@ fun PaymentOption(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DeliveryTimeDialog(showDialog: MutableState<Boolean>, onConfirm: (String, String) -> Unit) {
-    val selectedDate = remember { mutableStateOf("Today") }
-    val selectedTime = remember { mutableStateOf("Now") }
+fun DeliveryTimeDialog(
+    showDialog: MutableState<Boolean>,
+    onConfirm: (String, String) -> Unit
+) {
+    val selectedTime = remember { mutableStateOf("") }
+
+    val now = remember { LocalTime.now() }
+    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+    val fullDateFormat = DateTimeFormatter.ofPattern("EEEE, dd/MM/yyyy", Locale.ENGLISH)
+
+    val today = remember { LocalDate.now() }
+    val todayLabel = today.format(fullDateFormat).replaceFirstChar { it.uppercase() }
+
+    val timeSlots = remember {
+        val startTime = LocalTime.of(10, 0)
+        val endTime = LocalTime.of(22, 0)
+        val slots = mutableListOf<String>()
+        var current = startTime
+        while (current <= endTime) {
+            if (current.isAfter(now)) {
+                slots.add(current.format(formatter))
+            }
+            current = current.plusMinutes(30)
+        }
+        slots
+    }
 
     if (showDialog.value) {
         AlertDialog(
@@ -482,36 +497,43 @@ fun DeliveryTimeDialog(showDialog: MutableState<Boolean>, onConfirm: (String, St
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Change delivery time", fontWeight = FontWeight.Bold)
+                    Text("Select delivery time", fontWeight = FontWeight.Bold)
                     IconButton(onClick = { showDialog.value = false }) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
                     }
                 }
             },
             text = {
-                Column {
-                    Row(
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Today: $todayLabel",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Divider()
+
+                    LazyColumn(
                         modifier = Modifier
+                            .height(300.dp)
                             .fillMaxWidth()
-                            .background(Color.LightGray)
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Date", fontWeight = FontWeight.Bold)
-                        Text("Time", fontWeight = FontWeight.Bold)
+                        items(timeSlots) { time ->
+                            DeliveryTimeItem(
+                                time = time,
+                                selectedTime = selectedTime
+                            )
+                            Divider()
+                        }
                     }
-                    HorizontalDivider()
-                    DeliveryOption("Today", "Now", selectedDate, selectedTime)
-                    HorizontalDivider()
-                    DeliveryOption("05/03/2025", "16:15", selectedDate, selectedTime)
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        onConfirm(selectedDate.value, selectedTime.value)
+                        onConfirm(today.toString(), selectedTime.value)
                         showDialog.value = false
                     },
+                    enabled = selectedTime.value.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
                 ) {
@@ -523,42 +545,49 @@ fun DeliveryTimeDialog(showDialog: MutableState<Boolean>, onConfirm: (String, St
 }
 
 @Composable
-fun DeliveryOption(
-    date: String, time: String,
-    selectedDate: MutableState<String>,
+fun DeliveryTimeItem(
+    time: String,
     selectedTime: MutableState<String>
 ) {
-    val isSelected = selectedDate.value == date && selectedTime.value == time
+    val isSelected = selectedTime.value == time
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                selectedDate.value = date
-                selectedTime.value = time
-            }
-            .background(if (isSelected) Color(0xFFFFD500) else Color.Transparent) // Màu nền khi được chọn
-            .padding(12.dp),
+            .clickable { selectedTime.value = time }
+            .background(if (isSelected) Color(0xFFFFD700) else Color.Transparent)
+            .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(date)
-        }
-        Text(time)
+        Icon(
+            imageVector = if (isSelected) Icons.Default.Check else Icons.Default.Schedule,
+            contentDescription = null,
+            tint = if (isSelected) Color.White else Color.Gray
+        )
+        Text(
+            text = time,
+            color = if (isSelected) Color.White else Color.Black,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }
 
 @Composable
-fun PromoDialog(showDialog: MutableState<Boolean>, onPromoSelected: (String) -> Unit) {
+fun PromoDialog(
+    showDialog: MutableState<Boolean>,
+    subtotal: Double,
+    onPromoSelected: (String) -> Unit
+) {
     val promoOptions = listOf(
         "Free Shipping",
         "5% off for orders above 5$",
         "10% off for orders above 10$",
         "15% off for orders above 20$"
     )
-    val selectedPromo = remember { mutableStateOf(promoOptions[0]) } // Mặc định là "Free Shipping"
+
+    val selectedPromo = remember { mutableStateOf(promoOptions[0]) }
 
     if (showDialog.value) {
         AlertDialog(
@@ -567,10 +596,20 @@ fun PromoDialog(showDialog: MutableState<Boolean>, onPromoSelected: (String) -> 
             text = {
                 Column {
                     promoOptions.forEach { promo ->
+                        val isEnabled = when (promo) {
+                            "Free Shipping" -> true
+                            "5% off for orders above 5$" -> subtotal > 5.0
+                            "10% off for orders above 10$" -> subtotal > 10.0
+                            "15% off for orders above 20$" -> subtotal > 20.0
+                            else -> false
+                        }
+
+                        val textColor = if (isEnabled) Color.Black else Color.Gray
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
+                                .clickable(enabled = isEnabled) {
                                     selectedPromo.value = promo
                                 }
                                 .padding(8.dp),
@@ -578,10 +617,13 @@ fun PromoDialog(showDialog: MutableState<Boolean>, onPromoSelected: (String) -> 
                         ) {
                             RadioButton(
                                 selected = (selectedPromo.value == promo),
-                                onClick = { selectedPromo.value = promo }
+                                onClick = {
+                                    if (isEnabled) selectedPromo.value = promo
+                                },
+                                enabled = isEnabled
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(promo, fontSize = 16.sp)
+                            Text(promo, fontSize = 16.sp, color = textColor)
                         }
                     }
                 }
@@ -601,10 +643,4 @@ fun PromoDialog(showDialog: MutableState<Boolean>, onPromoSelected: (String) -> 
             }
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun Preview1() {
-    NavigationGraph()
 }

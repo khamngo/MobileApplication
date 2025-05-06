@@ -1,6 +1,5 @@
 package com.example.foodorderingapplication
 
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,9 +15,8 @@ import androidx.navigation.navArgument
 import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.view.home.HomeScreen
 import com.example.foodorderingapplication.view.home.IntroScreen
-import com.example.foodorderingapplication.view.home.LoginScreen
+import com.example.foodorderingapplication.view.home.SignInScreen
 import com.example.foodorderingapplication.view.home.SignUpScreen
-import com.example.foodorderingapplication.view.home.ThanksScreen
 import com.example.foodorderingapplication.view.menu.AddShippingScreen
 import com.example.foodorderingapplication.view.menu.CartScreen
 import com.example.foodorderingapplication.view.menu.CategoryScreen
@@ -36,6 +34,7 @@ import com.example.foodorderingapplication.view.profile.ProfileScreen
 import com.example.foodorderingapplication.view.profile.ReviewScreen
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        enableEdgeToEdge()
@@ -45,6 +44,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavigationGraph() {
     val navController = rememberNavController()
@@ -58,11 +58,11 @@ fun NavigationGraph() {
             IntroScreen(navController = navController)
         }
 
-        composable("login") { LoginScreen(navController = navController) }
+        composable("login") { SignInScreen(navController = navController) }
         composable("sign_up") {
             SignUpScreen(
                 onBackClick = { navController.popBackStack() },
-                onSignInClick = { navController.navigate("sign_in_screen") }
+                onSignInClick = { navController.navigate("login") }
             )
         }
 
@@ -96,10 +96,14 @@ fun NavigationGraph() {
         composable("my_review") { MyReviewScreen(navController = navController) }
         composable("thank_you") { ThankYouScreen(navController = navController) }
         composable("about_us") { ThankYouScreen(navController = navController) }
-
+        composable("review/{orderId}") { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            ReviewScreen(navController = navController, orderId = orderId)
+        }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {

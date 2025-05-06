@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,14 +21,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,27 +39,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.example.foodorderingapplication.NavigationGraph
-import com.example.foodorderingapplication.view.HeaderSection
-import com.example.foodorderingapplication.view.admin.CustomTextField
-import com.google.common.io.Files.append
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.foodorderingapplication.viewmodel.AuthViewModel
 
 
 @Composable
 fun SignUpScreen(
     onBackClick: () -> Unit,
-    onSignInClick: () -> Unit
+    onSignInClick: () -> Unit,
+    authViewModel: AuthViewModel = viewModel()
 ) {
-    val username = remember { mutableStateOf("") }
-    val email = remember { mutableStateOf("") }
-    val phone = remember { mutableStateOf("") }
-    val password = remember { mutableStateOf("") }
-    val confirmPassword = remember { mutableStateOf("") }
+    val username by authViewModel.username.collectAsState()
+    val email by authViewModel.email.collectAsState()
+    val phone by authViewModel.phone.collectAsState()
+    val password by authViewModel.password.collectAsState()
+    val confirmPassword by authViewModel.confirmPassword.collectAsState()
+
+    val signUpSuccess by authViewModel.signUpSuccess.collectAsState()
+    val errorMessage by authViewModel.errorMessage.collectAsState()
+    val isLoading by authViewModel.isLoading.collectAsState()
+
+    // Xử lý điều hướng khi đăng ký thành công
+    LaunchedEffect(signUpSuccess) {
+        if (signUpSuccess) {
+            onSignInClick() // Điều hướng về SignInScreen
+            authViewModel.resetSignUpState()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -89,53 +100,69 @@ fun SignUpScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         CustomOutlinedTextField(
-            value = username.value,
-            onValueChange = { username.value = it },
+            value = username,
+            onValueChange = authViewModel::onUsernameChange,
             label = "Username",
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = errorMessage.contains("Username")
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomOutlinedTextField(
-            value = email.value,
-            onValueChange = { email.value = it },
+            value = email,
+            onValueChange = authViewModel::onEmailChange,
             label = "Email",
             modifier = Modifier.fillMaxWidth(),
-            keyboardType = KeyboardType.Email
+            keyboardType = KeyboardType.Email,
+            isError = errorMessage.contains("Email")
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomOutlinedTextField(
-            value = phone.value,
-            onValueChange = { phone.value = it },
-            label = "Phone...",
+            value = phone,
+            onValueChange = authViewModel::onPhoneChange,
+            label = "Phone",
             modifier = Modifier.fillMaxWidth(),
-            keyboardType = KeyboardType.Phone
+            keyboardType = KeyboardType.Phone,
+            isError = errorMessage.contains("Phone")
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomOutlinedTextField(
-            value = password.value,
-            onValueChange = { password.value = it },
+            value = password,
+            onValueChange = authViewModel::onPasswordChange,
             label = "Password",
             modifier = Modifier.fillMaxWidth(),
-            isPassword = true
+            isPassword = true,
+            isError = errorMessage.contains("Password")
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomOutlinedTextField(
-            value = confirmPassword.value,
-            onValueChange = { confirmPassword.value = it },
+            value = confirmPassword,
+            onValueChange = authViewModel::onConfirmPasswordChange,
             label = "Confirm Password",
             modifier = Modifier.fillMaxWidth(),
-            isPassword = true
+            isPassword = true,
+            isError = errorMessage.contains("Confirm Password")
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Hiển thị lỗi
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        }
 
         Text(
             buildAnnotatedString {
@@ -149,20 +176,38 @@ fun SignUpScreen(
                 }
             },
             fontSize = 12.sp,
-            color = Color.Gray
+            color = Color.Gray,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { /* Handle Sign Up */ },
+            onClick = {
+                authViewModel.signUpWithEmailAndPassword(
+                    username = username,
+                    email = email,
+                    phone = phone,
+                    password = password,
+                    confirmPassword = confirmPassword
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
             shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107)),
+            enabled = !isLoading
         ) {
-            Text("Sign Up", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text("Sign Up", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -200,7 +245,8 @@ fun CustomOutlinedTextField(
     label: String,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    isError: Boolean = false
 ) {
     OutlinedTextField(
         value = value,
@@ -209,12 +255,7 @@ fun CustomOutlinedTextField(
         modifier = modifier,
         shape = RoundedCornerShape(8.dp),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        isError = isError
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun Greeting1Preview() {
-    NavigationGraph()
 }

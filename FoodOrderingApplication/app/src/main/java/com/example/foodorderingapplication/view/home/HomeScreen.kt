@@ -94,7 +94,7 @@ fun HomeScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                RestaurantSelectionSection(restaurantItems)
+//                RestaurantSelectionSection(restaurantItems)
 
                 Spacer(modifier = Modifier.height(24.dp))
 

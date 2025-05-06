@@ -104,7 +104,7 @@ fun FoodDetailScreen(
                 }
             }
         } ?: run {
-            Text("Không tìm thấy món ăn!", modifier = Modifier.padding(16.dp))
+            Text("No dish found!", modifier = Modifier.padding(16.dp))
         }
 
         Box(

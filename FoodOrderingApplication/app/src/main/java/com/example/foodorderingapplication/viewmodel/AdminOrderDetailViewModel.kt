@@ -1,6 +1,6 @@
 package com.example.foodorderingapplication.viewmodel
 
-import com.google.firebase.auth.FirebaseAuth
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.CartItem
@@ -10,17 +10,18 @@ import com.example.foodorderingapplication.model.RestaurantItem
 import com.example.foodorderingapplication.model.ShippingAddress
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Locale
 
-class OrderDetailViewModel : ViewModel() {
+class AdminOrderDetailViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
+    private val messaging = FirebaseMessaging.getInstance()
 
     private val _orderDetail = MutableStateFlow<OrderItem?>(null)
     val orderDetail: StateFlow<OrderItem?> = _orderDetail.asStateFlow()
@@ -31,7 +32,6 @@ class OrderDetailViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // Lấy chi tiết đơn hàng
     fun fetchOrderDetail(orderId: String) {
         _isLoading.value = true
         db.collection("orders").document(orderId)
@@ -77,7 +77,7 @@ class OrderDetailViewModel : ViewModel() {
                                 isDefault = shippingAddressData?.get("isDefault") as? Boolean ?: false
                             )
 
-                            val orderDateTimestamp = (data?.get("orderDate") ?: "") as? Timestamp
+                            val orderDateTimestamp = data?.get("orderDate") as? Timestamp
                             val orderDate = orderDateTimestamp?.toDate()?.let {
                                 SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)
                             } ?: ""
@@ -111,8 +111,33 @@ class OrderDetailViewModel : ViewModel() {
             }
     }
 
-    // Hủy đơn hàng
-    fun cancelOrder(orderId: String, onConfirm: () -> Unit) {
+    fun acceptOrder(orderId: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val order = _orderDetail.value ?: throw IllegalArgumentException("Order not found")
+                if (order.status != OrderStatus.Preparing.name) {
+                    throw IllegalArgumentException("Can only accept orders in Preparing status")
+                }
+                db.collection("orders").document(orderId)
+                    .update("status", OrderStatus.Shipped.name)
+                    .await()
+                _errorMessage.value = "Order accepted successfully"
+                sendNotification(
+                    to = "/topics/user_${order.userId}",
+                    title = "Order Accepted",
+                    body = "Your order #${order.orderId} has been accepted and is being shipped."
+                )
+                onSuccess()
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error accepting order"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun cancelOrder(orderId: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -125,10 +150,11 @@ class OrderDetailViewModel : ViewModel() {
                     .await()
                 _errorMessage.value = "Order cancelled successfully"
                 sendNotification(
+                    to = "/topics/user_${order.userId}",
                     title = "Order Cancelled",
                     body = "Your order #${order.orderId} has been cancelled."
                 )
-                onConfirm()
+                onSuccess()
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Error cancelling order"
             } finally {
@@ -137,24 +163,15 @@ class OrderDetailViewModel : ViewModel() {
         }
     }
 
-    // Mua lại
     fun buyAgain(orderId: String, deliveryDate: String, deliveryTime: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                val selectedDate = dateFormat.parse(deliveryDate)
-                if (selectedDate != null) {
-                    if (selectedDate.before(Calendar.getInstance().time)) {
-                        throw IllegalArgumentException("Delivery date must be in the future")
-                    }
-                }
                 val order = _orderDetail.value ?: throw IllegalArgumentException("Order not found")
                 val newOrder = order.copy(
                     orderId = db.collection("orders").document().id,
                     status = OrderStatus.Preparing.name,
                     orderDate = Timestamp.now(),
-                    userId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
                     deliveryDate = deliveryDate,
                     deliveryTime = deliveryTime
                 )
@@ -163,40 +180,30 @@ class OrderDetailViewModel : ViewModel() {
                     .await()
                 _errorMessage.value = "New order created successfully"
                 sendNotification(
+                    to = "/topics/user_${order.userId}",
                     title = "New Order Created",
                     body = "Your new order #${newOrder.orderId} has been placed."
                 )
                 onSuccess()
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error creating new order"
+                _errorMessage.value = "Error creating new order: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    // Gửi thông báo qua FCM
-    private fun sendNotification(title: String, body: String) {
+    private fun sendNotification(to: String, title: String, body: String) {
         viewModelScope.launch {
             try {
                 val message = mapOf(
-                    "to" to "/topics/user_${FirebaseAuth.getInstance().currentUser?.uid}",
+                    "to" to to,
                     "notification" to mapOf(
                         "title" to title,
                         "body" to body
                     )
                 )
-                // Lưu vào Firestore
-                db.collection("users")
-                    .document(FirebaseAuth.getInstance().currentUser?.uid ?: "")
-                    .collection("notifications")
-                    .add(
-                        mapOf(
-                            "title" to title,
-                            "body" to body,
-                            "timestamp" to Timestamp.now()
-                        )
-                    ).await()
+                // Giả lập gửi FCM (yêu cầu server-side implementation)
                 println("Sending FCM: $message")
             } catch (e: Exception) {
                 _errorMessage.value = "Error sending notification: ${e.message}"

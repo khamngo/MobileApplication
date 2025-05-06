@@ -43,6 +43,10 @@ android {
 }
 
 dependencies {
+    implementation("com.google.android.material:material:1.9.0")
+    implementation("com.google.firebase:firebase-messaging-ktx:23.4.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation("io.ktor:ktor-client-android:2.3.7")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
@@ -70,6 +74,7 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     implementation("com.google.firebase:firebase-firestore:24.10.3")
+    implementation("com.google.firebase:firebase-firestore-ktx:24.10.3")
 
     implementation("com.google.accompanist:accompanist-pager:0.32.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.0")

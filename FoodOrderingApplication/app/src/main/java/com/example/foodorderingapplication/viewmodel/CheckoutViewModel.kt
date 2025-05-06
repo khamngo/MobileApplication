@@ -12,6 +12,7 @@ import com.example.foodorderingapplication.model.CartItem
 import com.example.foodorderingapplication.model.MoMoRequest
 import com.example.foodorderingapplication.model.MoMoResponse
 import com.example.foodorderingapplication.model.OrderItem
+import com.example.foodorderingapplication.model.RestaurantItem
 import com.example.foodorderingapplication.model.ShippingAddress
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -39,6 +40,7 @@ import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import java.util.Base64
+import kotlin.math.roundToInt
 
 class CheckoutViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -57,22 +59,25 @@ class CheckoutViewModel : ViewModel() {
     val selectedPromo: StateFlow<String> = _selectedPromo
 
     // Giảm giá dựa trên promo
-    val discount: StateFlow<Double> = _selectedPromo.map { promo ->
+    val discount: StateFlow<Double> = combine(_selectedPromo, _subtotal) { promo, subtotal ->
         when (promo) {
             "Free Shipping" -> 0.0
-            "5% off for orders above 5$" -> if (_subtotal.value > 5.0) _subtotal.value * 0.05 else 0.0
-            "10% off for orders above 10$" -> if (_subtotal.value > 10.0) _subtotal.value * 0.10 else 0.0
-            "15% off for orders above 20$" -> if (_subtotal.value > 20.0) _subtotal.value * 0.15 else 0.0
+            "5% off for orders above 5$" -> if (subtotal > 5.0) subtotal * 0.05 else 0.0
+            "10% off for orders above 10$" -> if (subtotal > 10.0) subtotal * 0.10 else 0.0
+            "15% off for orders above 20$" -> if (subtotal > 20.0) subtotal * 0.15 else 0.0
             else -> 0.0
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    // Tổng tiền (bao gồm thuế, phí giao hàng)
-    val total: StateFlow<Double> = combine(_subtotal, discount) { sub, dis ->
-        val taxes = 2.0
-        val shippingFee = if (dis == 0.0) 0.0 else 2.0
-        val result = (sub - dis + taxes + shippingFee).coerceAtLeast(0.0)
 
+    val taxes = 2.0
+    val shippingFee = 2.0
+
+    val total: StateFlow<Double> = combine(_subtotal, discount) { sub, dis ->
+        val fee = if (dis == 0.0) 0.0 else shippingFee
+        val rawTotal = (sub - dis + taxes + fee).coerceAtLeast(0.0)
+
+        val result = kotlin.math.round(rawTotal * 100) / 100  // làm tròn 2 chữ số
         Log.d("TOTAL_DEBUG", "Subtotal: $sub, Discount: $dis, Total: $result")
         result
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
@@ -82,10 +87,10 @@ class CheckoutViewModel : ViewModel() {
     private val _shippingAddress = MutableStateFlow(ShippingAddress())
     val shippingAddress: StateFlow<ShippingAddress> = _shippingAddress
 
-    private val _deliveryDate = MutableStateFlow("Today")
+    private val _deliveryDate = MutableStateFlow("")
     val deliveryDate: StateFlow<String> = _deliveryDate
 
-    private val _deliveryTime = MutableStateFlow("Now")
+    private val _deliveryTime = MutableStateFlow("")
     val deliveryTime: StateFlow<String> = _deliveryTime
 
     // Phương thức thanh toán
@@ -108,7 +113,7 @@ class CheckoutViewModel : ViewModel() {
                 .collection("items")
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
-                        println("Lỗi khi lấy giỏ hàng: $e")
+                        println("Error while getting cart: $e")
                         return@addSnapshotListener
                     }
                     if (snapshot != null) {
@@ -134,7 +139,7 @@ class CheckoutViewModel : ViewModel() {
     // Cập nhật subtotal
     private fun updateSubtotal() {
         val subtotal = _cartItems.value.sumOf { it.price * it.quantity }
-        _subtotal.value = subtotal
+        _subtotal.value = (subtotal * 100).roundToInt() / 100.0
     }
 
     // Tải địa chỉ giao hàng từ Firestore
@@ -145,6 +150,16 @@ class CheckoutViewModel : ViewModel() {
                 .collection("shippingAddress").document("default")
                 .get()
                 .addOnSuccessListener { doc ->
+                    val restaurantMap = doc.get("restaurant") as? Map<*, *>
+                    val restaurant = if (restaurantMap != null) {
+                        RestaurantItem(
+                            name = restaurantMap["name"] as? String ?: "",
+                            address = restaurantMap["address"] as? String ?: "",
+                            phone = restaurantMap["phone"] as? String ?: "",
+                            hours = restaurantMap["hours"] as? String ?: ""
+                        )
+                    } else RestaurantItem()
+
                     if (doc.exists()) {
                         _shippingAddress.value = ShippingAddress(
                             firstName = doc.getString("firstName") ?: "",
@@ -154,12 +169,13 @@ class CheckoutViewModel : ViewModel() {
                             district = doc.getString("district") ?: "",
                             ward = doc.getString("ward") ?: "",
                             street = doc.getString("street") ?: "",
+                            restaurant = restaurant,
                             isDefault = doc.getBoolean("isDefault") == true
                         )
                     }
                 }
                 .addOnFailureListener { e ->
-                    println("Lỗi khi tải địa chỉ: $e")
+                    println("Error loading address: $e")
                 }
         }
     }
@@ -190,10 +206,11 @@ class CheckoutViewModel : ViewModel() {
         val orderId = UUID.randomUUID().toString()
         val orderItem = OrderItem(
             userId = userId,
+            orderId = orderId,
             items = _cartItems.value,
             subtotal = _subtotal.value,
             shippingFee = if (_selectedPromo.value == "Free Shipping") 0.0 else 5_000.0,
-            taxes = 2_000.0,
+            taxes = taxes,
             discount = discount.value,
             total = total.value,
             shippingAddress = _shippingAddress.value,
@@ -202,19 +219,18 @@ class CheckoutViewModel : ViewModel() {
             promo = _selectedPromo.value,
             paymentMethod = _paymentMethod.value,
             orderDate = Timestamp.now(),
-            status = "Preparing" // THÊM TRẠNG THÁI ĐƠN HÀNG
+            status = "Preparing"
         )
 
         viewModelScope.launch {
             db.collection("orders").document(orderId)
                 .set(orderItem)
                 .addOnSuccessListener {
-                    // Xóa giỏ hàng sau khi đặt hàng
                     clearCart(userId)
-                    println("Đã đặt hàng thành công!")
+                    println("Ordered successfully!")
                 }
                 .addOnFailureListener { e ->
-                    println("Lỗi khi đặt hàng: $e")
+                    println("Error when ordering: $e")
                 }
         }
     }
@@ -234,7 +250,7 @@ class CheckoutViewModel : ViewModel() {
                         .addOnSuccessListener {
                             _cartItems.value = emptyList()
                             _subtotal.value = 0.0
-                            println("Đã xóa giỏ hàng")
+                            println("Cart deleted")
                         }
                 }
         }

@@ -32,8 +32,8 @@ import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
 fun AdminAccountScreen(navController: NavController, viewModel: MyAccountViewModel = viewModel()) {
     val userState by viewModel.user.collectAsState()
 
-    var password by remember { mutableStateOf("ngominhkham25") }
-    var confirmPassword by remember { mutableStateOf("ngominhkham25") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Header
@@ -80,10 +80,7 @@ fun AdminAccountScreen(navController: NavController, viewModel: MyAccountViewMod
             Button(
                 onClick = {
                     if (password == confirmPassword) {
-                        viewModel.saveChanges(
-                            onSuccess = { /* thông báo thành công */ },
-                            onFailure = { error -> /* thông báo lỗi */ }
-                        )
+
                         navController.popBackStack()
                     } else {
                         // thông báo lỗi xác nhận mật khẩu

@@ -1,10 +1,13 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.util.Patterns
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.foodorderingapplication.model.UserProfile
+import com.example.foodorderingapplication.model.UserItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,17 +15,43 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import kotlin.jvm.java
 
 class AuthViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
+
+    private val _username = MutableStateFlow("")
+    private val _email = MutableStateFlow("")
+    private val _phone = MutableStateFlow("")
+    private val _password = MutableStateFlow("")
+    private val _confirmPassword = MutableStateFlow("")
+
+    // Public StateFlow (đọc-only cho UI)
+    val username: StateFlow<String> = _username.asStateFlow()
+    val email: StateFlow<String> = _email.asStateFlow()
+    val phone: StateFlow<String> = _phone.asStateFlow()
+    val password: StateFlow<String> = _password.asStateFlow()
+    val confirmPassword: StateFlow<String> = _confirmPassword.asStateFlow()
+
+    // Hàm cập nhật dữ liệu
+    fun onUsernameChange(value: String) { _username.value = value }
+    fun onEmailChange(value: String) { _email.value = value }
+    fun onPhoneChange(value: String) { _phone.value = value }
+    fun onPasswordChange(value: String) { _password.value = value }
+    fun onConfirmPasswordChange(value: String) { _confirmPassword.value = value }
+
 
     private val _createAccountSuccess = MutableStateFlow(false)
     val createAccountSuccess: StateFlow<Boolean> = _createAccountSuccess.asStateFlow()
 
     private val _signInSuccess = MutableStateFlow(false)
     val signInSuccess: StateFlow<Boolean> = _signInSuccess.asStateFlow()
+
+    private val _signUpSuccess = MutableStateFlow(false)
+    val signUpSuccess: StateFlow<Boolean> = _signUpSuccess.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
@@ -35,6 +64,100 @@ class AuthViewModel : ViewModel() {
 
     init {
         checkUserAndRole()
+    }
+
+    fun signInWithEmailAndPassword(
+        onSuccess: () -> Unit
+    ) {
+        val emailValue = _email.value.trim()
+        val passwordValue = _password.value
+
+        if (emailValue.isEmpty() || passwordValue.isEmpty()) {
+            _errorMessage.value = "Please enter both email and password"
+            return
+        }
+
+        _isLoading.value = true
+
+        viewModelScope.launch {
+            auth.signInWithEmailAndPassword(emailValue, passwordValue)
+                .addOnCompleteListener { task ->
+                    _isLoading.value = false
+                    if (task.isSuccessful) {
+                        onSuccess()
+                    } else {
+                        _errorMessage.value = task.exception?.message ?: "Login failed"
+                    }
+                }
+
+            _errorMessage.value = ""
+            _signUpSuccess.value = true
+        }
+    }
+
+    fun signUpWithEmailAndPassword(
+        username: String,
+        email: String,
+        phone: String,
+        password: String,
+        confirmPassword: String
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Validate input
+                when {
+                    username.isBlank() -> throw IllegalArgumentException("Username cannot be empty")
+                    email.isBlank() -> throw IllegalArgumentException("Email cannot be empty")
+                    !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> throw IllegalArgumentException("Invalid email format")
+                    phone.isBlank() -> throw IllegalArgumentException("Phone cannot be empty")
+                    !Patterns.PHONE.matcher(phone).matches() -> throw IllegalArgumentException("Invalid phone number format")
+                    password.isBlank() -> throw IllegalArgumentException("Password cannot be empty")
+                    password.length < 6 -> throw IllegalArgumentException("Password must be at least 6 characters")
+                    confirmPassword != password -> throw IllegalArgumentException("Confirm Password does not match")
+                }
+
+                // Tạo tài khoản Firebase Auth
+                val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+                val firebaseUser = authResult.user ?: throw Exception("User creation failed")
+
+                // Cập nhật displayName cho FirebaseUser
+                val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                    .setDisplayName(username)
+                    .build()
+                firebaseUser.updateProfile(profileUpdates).await()
+
+                // Chuẩn bị dữ liệu người dùng với ngày tạo
+                val userMap = mapOf(
+                    "uid" to firebaseUser.uid,
+                    "username" to username,
+                    "email" to email,
+                    "phone" to phone,
+                    "role" to "user",
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+
+                // Lưu vào Firestore
+                db.collection("users").document(firebaseUser.uid)
+                    .collection("profile").document("info")
+                    .set(userMap)
+                    .await()
+
+                _signUpSuccess.value = true
+                _errorMessage.value = ""
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error creating account"
+                _signUpSuccess.value = false
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+
+    fun resetSignUpState() {
+        _signUpSuccess.value = false
+        _errorMessage.value = ""
     }
 
     private fun checkUserAndRole() {
@@ -93,8 +216,9 @@ class AuthViewModel : ViewModel() {
                 val userId = authResult.user?.uid ?: throw Exception("User creation failed")
 
                 // Lưu profile vào Firestore
-                val profile = UserProfile(
+                val profile = UserItem(
                     username = username,
+                    phone = phone,
                     email = email,
                     role = role
                 )
@@ -138,15 +262,15 @@ class AuthViewModel : ViewModel() {
     }
 
     // Lấy hoặc tạo profile người dùng
-    private suspend fun getOrCreateUserProfile(userId: String, email: String?, displayName: String?): UserProfile {
+    private suspend fun getOrCreateUserProfile(userId: String, email: String?, displayName: String?): UserItem {
         val profileRef = db.collection("users").document(userId).collection("profile").document("info")
         val snapshot = profileRef.get().await()
 
         return if (snapshot.exists()) {
-            snapshot.toObject(UserProfile::class.java) ?: UserProfile()
+            snapshot.toObject(UserItem::class.java) ?: UserItem()
         } else {
             // Tạo profile mới với vai trò mặc định là user
-            val newProfile = UserProfile(
+            val newProfile = UserItem(
                 role = "user",
                 email = email ?: "",
                 username = displayName ?: ""

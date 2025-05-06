@@ -48,13 +48,10 @@ class OrderViewModel : ViewModel() {
                     orderItems.mapNotNull {
                         try {
                             FoodItem(
-                                id = it["id"] as? String ?: "",
+                                id = it["foodId"] as? String ?: "",
                                 name = it["name"] as? String ?: "",
-                                description = it["description"] as? String ?: "",
-                                rating = (it["rating"] as? Number)?.toDouble() ?: 0.0,
                                 price = (it["price"] as? Number)?.toDouble() ?: 0.0,
                                 imageUrl = it["imageUrl"] as? String ?: "",
-                                tags = it["tags"] as? List<String> ?: emptyList()
                             )
                         } catch (e: Exception) {
                             null
@@ -64,7 +61,7 @@ class OrderViewModel : ViewModel() {
                 _recentOrders.value = items
             }
             .addOnFailureListener { e ->
-                println("Lỗi lấy đơn hàng: $e")
+                println("Order taking error: $e")
             }
     }
 
@@ -82,7 +79,7 @@ class OrderViewModel : ViewModel() {
                 }
                 _orders.value = orderList.sortedByDescending { it.orderDate }
             } catch (e: Exception) {
-                println("Lỗi khi tải đơn hàng: ${e.message}")
+                println("Error loading order: ${e.message}")
             }
         }
     }
@@ -99,7 +96,7 @@ class OrderViewModel : ViewModel() {
                 }
                 _orders.value = orderList.sortedByDescending { it.orderDate }
             } catch (e: Exception) {
-                println("Lỗi khi tải đơn hàng: ${e.message}")
+                println("Error loading order: ${e.message}")
             }
         }
     }

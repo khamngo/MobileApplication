@@ -23,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -45,15 +46,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.model.RestaurantItem
 import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.viewmodel.OrderViewModel
+import com.example.foodorderingapplication.viewmodel.RestaurantViewModel
 import com.example.foodorderingapplication.viewmodel.ShippingViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun AddShippingScreen(
     navController: NavController,
-    viewModel: ShippingViewModel = viewModel()
+    viewModel: ShippingViewModel = viewModel(),
+    resViewModel: RestaurantViewModel = viewModel()
 ) {
-// State cho các trường UI
+    // State cho các trường UI
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
@@ -68,6 +72,15 @@ fun AddShippingScreen(
     val fieldErrors by viewModel.fieldErrors.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val shippingAddress by viewModel.shippingAddress.collectAsState()
+    val restaurantItems by resViewModel.restaurantItems.collectAsState()
+
+    var restaurant by remember { mutableStateOf(RestaurantItem()) }
+
+    LaunchedEffect(restaurantItems) {
+        if (restaurantItems.isNotEmpty()) {
+            restaurant = restaurantItems.first()
+        }
+    }
 
     // Đồng bộ dữ liệu từ ViewModel vào state UI
     LaunchedEffect(shippingAddress) {
@@ -78,8 +91,10 @@ fun AddShippingScreen(
         district = shippingAddress.district
         ward = shippingAddress.ward
         street = shippingAddress.street
+        restaurant = shippingAddress.restaurant
         isDefault = shippingAddress.isDefault
     }
+
     // Nếu chưa đăng nhập
     if (userId == null) {
         Column(
@@ -89,13 +104,13 @@ fun AddShippingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Vui lòng đăng nhập để thêm địa chỉ", color = Color.Red, fontSize = 16.sp)
+            Text("Please login to add address!", color = Color.Red, fontSize = 16.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { navController.navigate("login") },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
             ) {
-                Text("Đăng nhập")
+                Text("Login")
             }
         }
         return
@@ -107,7 +122,7 @@ fun AddShippingScreen(
             .verticalScroll(rememberScrollState())
     ) {
         // Header
-        HeaderSection("Add shipping address"){
+        HeaderSection("Add shipping address") {
             navController.popBackStack()
         }
 
@@ -131,19 +146,18 @@ fun AddShippingScreen(
             phoneNumberError = fieldErrors.phoneNumberError || fieldErrors.phoneNumberInvalid,
             onFirstNameChange = {
                 firstName = it
-                viewModel.updateShippingField(it, lastName, phoneNumber, province, district,ward, street, isDefault)
+                viewModel.onFirstNameChange(it)
             },
             onLastNameChange = {
                 lastName = it
-                viewModel.updateShippingField(firstName, it, phoneNumber, province, district,ward, street, isDefault)
+                viewModel.onLastNameChange(it)
             },
             onPhoneNumberChange = {
                 phoneNumber = it
-                viewModel.updateShippingField(firstName, lastName, it, province, district,ward, street, isDefault)
+                viewModel.onPhoneNumberChange(it)
             }
         )
 
-        // Address Section
         AddressSection(
             province = province,
             district = district,
@@ -155,35 +169,31 @@ fun AddShippingScreen(
             wardError = fieldErrors.streetError,
             onProvinceChange = {
                 province = it
-                viewModel.updateShippingField(firstName, lastName, phoneNumber, it, district,ward, street, isDefault)
+                viewModel.onProvinceChange(it)
             },
             onStreetChange = {
                 street = it
-                viewModel.updateShippingField(firstName, lastName, phoneNumber, province, district,ward, it, isDefault)
+                viewModel.onStreetChange(it)
             },
             onDistrictChange = {
                 district = it
-                viewModel.updateShippingField(firstName, lastName, phoneNumber, province,it, ward,street ,isDefault)
+                viewModel.onDistrictChange(it)
             },
             onWardChange = {
                 ward = it
-                viewModel.updateShippingField(firstName, lastName, phoneNumber, province,district, it,street, isDefault)
+                viewModel.onWardChange(it)
             }
         )
+
 
         // Checkbox
         DefaultAccountCheckbox(isDefault, onCheckedChange = {
             isDefault = it
-            viewModel.updateShippingField(firstName, lastName, phoneNumber, province, district,ward, street, it)
+            viewModel.onIsDefaultChange(it)
         })
 
         // Restaurant Selection
-        RestaurantSelectionSection(
-            restaurantItems = listOf(
-                RestaurantItem("KFOODS1 - LANDMARK 81", "720A Điện Biên Phủ, P22, Q. Bình Thạnh, TP HCM", "056 3167 5325", "8:30 AM - 10:00 PM"),
-                RestaurantItem("KFOODS2 - BITEXCO", "2 Hải Triều, Quận 1, TP HCM", "056 3428 8245", "9:30 AM - 11:00 PM")
-            )
-        )
+        RestaurantScreen(viewModel = resViewModel,selectedRestaurant = restaurant)
 
         // Confirm Button
         ConfirmButton {
@@ -191,14 +201,15 @@ fun AddShippingScreen(
             viewModel.saveShippingAddressToFirebase(
                 userId = userId,
                 onSuccess = {
-                    Toast.makeText(context, "Đã lưu địa chỉ thành công!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Address saved successfully!", Toast.LENGTH_SHORT).show()
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("add_shopping_address", true)
                     navController.popBackStack()
                 },
                 onFailure = {
-                    Toast.makeText(context, "Lỗi lưu địa chỉ: ${it.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Error saving address: ${it.message}", Toast.LENGTH_LONG)
+                        .show()
                 }
             )
         }
@@ -301,7 +312,7 @@ fun AddressSection(
                 .padding(vertical = 4.dp)
         )
         OutlinedTextField(
-            value = district ,
+            value = district,
             onValueChange = onDistrictChange,
             label = {
                 Text(
@@ -362,8 +373,28 @@ fun DefaultAccountCheckbox(isDefault: Boolean, onCheckedChange: (Boolean) -> Uni
 }
 
 @Composable
-fun RestaurantSelectionSection(restaurantItems: List<RestaurantItem>) {
-    val selectedRestaurant = remember { mutableStateOf(restaurantItems.firstOrNull()) }
+fun RestaurantScreen(
+    viewModel: RestaurantViewModel,
+    selectedRestaurant: RestaurantItem
+) {
+    val restaurantItems by viewModel.restaurantItems.collectAsState()
+    val isLoading by viewModel.loading.collectAsState()
+    val error by viewModel.errorRestaurant.collectAsState()
+
+    when {
+        isLoading -> CircularProgressIndicator()
+        error != null -> Text("Error: $error", color = Color.Red)
+        else -> RestaurantSelectionSection(restaurantItems = restaurantItems, selectedRestaurant = selectedRestaurant)
+    }
+}
+
+@Composable
+fun RestaurantSelectionSection(
+    restaurantItems: List<RestaurantItem>,
+    selectedRestaurant: RestaurantItem,
+    viewModel: ShippingViewModel = viewModel()
+) {
+//    val selectedRestaurant by viewModel.selectedRestaurant.collectAsState()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -381,30 +412,10 @@ fun RestaurantSelectionSection(restaurantItems: List<RestaurantItem>) {
         restaurantItems.forEach { restaurant ->
             RestaurantCard(
                 restaurantItem = restaurant,
-                isSelected = selectedRestaurant.value == restaurant,
-                onSelect = { selectedRestaurant.value = restaurant }
-            )
-        }
-    }
-}
-@Composable
-fun ConfirmButton(onClick: () -> Unit) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp)) {
-        Button(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCC00))
-        ) {
-            Text(
-                "Confirm",
-                fontSize = 16.sp,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
+                isSelected = selectedRestaurant == restaurant,
+                onSelect = {
+                    viewModel.selectRestaurant(restaurant)
+                }
             )
         }
     }
@@ -456,11 +467,36 @@ fun RestaurantCard(
                     .padding(horizontal = 20.dp)
             ) {
                 Text(
-                    "Chọn cửa hàng",
+                    "Select",
                     fontSize = 14.sp,
                     color = Color.Black
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun ConfirmButton(onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCC00))
+        ) {
+            Text(
+                "Confirm",
+                fontSize = 16.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

@@ -1,40 +1,87 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.util.Patterns
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.UserItem
 import com.google.firebase.Firebase
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class MyAccountViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
 
     private val _user = MutableStateFlow(UserItem())
-    val user: StateFlow<UserItem> = _user
+    val user: StateFlow<UserItem> = _user.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow("")
+    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // Lưu giá trị tạm thời từ UI
+    private var tempUsername: String = ""
+    private var tempEmail: String = ""
+    private var tempPhone: String? = null
 
     init {
         fetchUserData()
     }
 
     private fun fetchUserData() {
-        val currentUser = Firebase.auth.currentUser
-        currentUser?.let {
+        val currentUser = auth.currentUser
+        currentUser?.let { user ->
+            // Khởi tạo dữ liệu ban đầu từ FirebaseUser
             _user.value = UserItem(
-                uid = it.uid,
-                username = it.displayName ?: "",
-                email = it.email ?: "",
-                phone = it.phoneNumber,
-                avatarUrl = it.photoUrl?.toString()
+                uid = user.uid,
+                username = user.displayName ?: "",
+                email = user.email ?: "",
+                phone = user.phoneNumber,
+                avatarUrl = user.photoUrl?.toString()
             )
+
+            // Sử dụng snapshot listener để cập nhật từ Firestore
+            db.collection("users").document(user.uid)
+                .collection("profile").document("info")
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        println("Error fetching user profile: ${e.message}")
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null && snapshot.exists()) {
+                        val profile = snapshot.data
+                        _user.value = UserItem(
+                            uid = user.uid,
+                            username = user.displayName ?: "",
+                            email = user.email ?: "",
+                            phone = profile?.get("phone") as? String ?: user.phoneNumber,
+                            avatarUrl = user.photoUrl?.toString()
+                        )
+                        // Cập nhật giá trị tạm thời
+                        tempUsername = user.displayName ?: ""
+                        tempEmail = user.email ?: ""
+                        tempPhone = profile?.get("phone") as? String ?: user.phoneNumber
+                    }
+                }
+        } ?: run {
+            _user.value = UserItem()
         }
     }
 
-    fun updateUsername(newName: String) {
-        _user.value = _user.value.copy(username = newName)
+    fun updateUsername(newUsername: String) {
+        _user.value = _user.value.copy(username = newUsername)
     }
 
     fun updateEmail(newEmail: String) {
@@ -45,20 +92,84 @@ class MyAccountViewModel : ViewModel() {
         _user.value = _user.value.copy(phone = newPhone)
     }
 
-    fun saveChanges(onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        val user = Firebase.auth.currentUser
+    fun updateUserProfile(password: String, confirmPassword: String, currentPassword: String) {
         viewModelScope.launch {
-            val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
-                .setDisplayName(_user.value.username)
-                .build()
+            _isLoading.value = true
+            try {
+                val user = auth.currentUser ?: throw IllegalArgumentException("User not logged in")
 
-            user?.updateProfile(profileUpdates)
-                ?.addOnSuccessListener { onSuccess() }
-                ?.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi không xác định") }
+                // Validate input
+                when {
+                    tempUsername.isBlank() -> throw IllegalArgumentException("Username cannot be empty")
+                    tempEmail.isBlank() -> throw IllegalArgumentException("Email cannot be empty")
+                    !Patterns.EMAIL_ADDRESS.matcher(tempEmail).matches() -> throw IllegalArgumentException("Invalid email format")
+                    tempPhone?.isBlank() == true -> throw IllegalArgumentException("Phone cannot be empty")
+                    tempPhone?.let { !Patterns.PHONE.matcher(it).matches() } == true -> throw IllegalArgumentException("Invalid phone number format")
+                    password.isNotEmpty() && password.length < 6 -> throw IllegalArgumentException("Password must be at least 6 characters")
+                    password != confirmPassword -> throw IllegalArgumentException("Confirm Password does not match")
+                    currentPassword.isBlank() -> throw IllegalArgumentException("Current password is required")
+                }
+
+                // Re-authenticate user
+                val credential = EmailAuthProvider.getCredential(user.email!!, currentPassword)
+                user.reauthenticate(credential).await()
+
+                // Cập nhật email nếu thay đổi
+                if (tempEmail != user.email) {
+                    user.updateEmail(tempEmail).await()
+                }
+
+                // Cập nhật mật khẩu nếu có
+                if (password.isNotEmpty()) {
+                    user.updatePassword(password).await()
+                }
+
+                // Cập nhật username (displayName) trong FirebaseUser
+                if (tempUsername != user.displayName) {
+                    val profileUpdates = UserProfileChangeRequest.Builder()
+                        .setDisplayName(tempUsername)
+                        .build()
+                    user.updateProfile(profileUpdates).await()
+                }
+
+                // Cập nhật Firestore
+                val userMap = mapOf(
+                    "username" to tempUsername,
+                    "email" to tempEmail,
+                    "phone" to tempPhone,
+                    "role" to "user"
+                )
+                db.collection("users").document(user.uid)
+                    .collection("profile").document("info")
+                    .update(userMap)
+                    .await()
+
+                _errorMessage.value = "Profile updated successfully"
+            } catch (e: Exception) {
+                _errorMessage.value = when {
+                    e.message?.contains("reauthenticate") == true -> "Incorrect current password"
+                    else -> e.message ?: "Error updating profile"
+                }
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
+    fun clearErrorMessage() {
+        _errorMessage.value = ""
+    }
+
+    override fun onCleared() {
+        // Hủy snapshot listener
+        db.collection("users").document(auth.currentUser?.uid ?: "")
+            .collection("profile").document("info")
+            .addSnapshotListener { _, _ -> }.remove()
+        super.onCleared()
+    }
+
+
     fun logout() {
-        auth.signOut()  // Firebase sign-out
+        auth.signOut()
     }
 }

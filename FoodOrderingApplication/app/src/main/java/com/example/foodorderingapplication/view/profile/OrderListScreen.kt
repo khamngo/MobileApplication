@@ -1,5 +1,8 @@
 package com.example.foodorderingapplication.view.profile
 
+import android.R.attr.onClick
+import android.R.attr.order
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -33,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.util.CoilUtils.result
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.model.OrderItem
 import com.example.foodorderingapplication.view.HeaderSection
@@ -45,18 +50,18 @@ fun OrderListScreen(navController: NavController, orderViewModel: OrderViewModel
     val orders by orderViewModel.orders.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection("My Orders"){
+        HeaderSection("My Orders") {
             navController.popBackStack()
         }
 
-        RecentOrdersSection()
+        RecentOrdersSection(navController)
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(orders) { order ->
-                OrderItemCardDisplay(order){
+                OrderItemCardDisplay(order) {
                     navController.navigate("order_detail/${order.orderId}")
                 }
                 HorizontalDivider()
@@ -76,7 +81,8 @@ fun OrderItemCardDisplay(order: OrderItem, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp).clickable{onClick()},
+            .padding(16.dp)
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -89,9 +95,11 @@ fun OrderItemCardDisplay(order: OrderItem, onClick: () -> Unit) {
             )
         }
 
-        Column(modifier = Modifier
-            .weight(1f)
-            .padding(start = 16.dp)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp)
+        ) {
             Text(
                 text = order.items.firstOrNull()?.name ?: "Food",
                 fontWeight = FontWeight.Bold,
@@ -116,17 +124,21 @@ fun OrderItemCardDisplay(order: OrderItem, onClick: () -> Unit) {
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Next",
                 tint = statusColor,
-                modifier = Modifier.clickable{onClick()}
+                modifier = Modifier.clickable { onClick() }
             )
         }
     }
 }
 
 @Composable
-fun RecentOrdersSection(viewModel: OrderViewModel = viewModel()) {
+fun RecentOrdersSection(navController: NavController, viewModel: OrderViewModel = viewModel()) {
     val recentOrders by viewModel.recentOrders.collectAsState()
 
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
         Text(
             text = "Recent Order",
             fontSize = 18.sp,
@@ -134,29 +146,35 @@ fun RecentOrdersSection(viewModel: OrderViewModel = viewModel()) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(
-            modifier = Modifier.fillMaxWidth(0.75f).padding(end = 16.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             items(recentOrders) { food ->
-                RecentOrderCard(food = food)
+                RecentOrderCard(food = food) {
+                    Log.d("Food",  "foodId: $food.id")
+                    navController.navigate("food_detail/${food.id}")
+                }
             }
         }
     }
 }
 
 @Composable
-fun RecentOrderCard(food: FoodItem) {
+fun RecentOrderCard(food: FoodItem, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .fillMaxWidth(0.75f)
+            .fillMaxWidth()
             .wrapContentHeight()
     ) {
         AsyncImage(
             model = food.imageUrl,
             contentDescription = food.name,
             modifier = Modifier
-                .fillMaxWidth().height(120.dp)
-                .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
+                .fillMaxWidth()
+                .height(120.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onClick() },
+            contentScale = ContentScale.Fit
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(

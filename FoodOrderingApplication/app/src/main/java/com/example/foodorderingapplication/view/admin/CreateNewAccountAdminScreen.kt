@@ -165,6 +165,8 @@ fun CreateNewAccountScreen(
                 isError = errorMessage.contains("Confirm Password")
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Chọn vai trò
             Text("Role", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Row(
