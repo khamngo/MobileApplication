@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,8 +50,10 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.CartItem
+import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.SubtotalAndButton
 import com.example.foodorderingapplication.viewmodel.CartViewModel
+import com.example.foodorderingapplication.viewmodel.FavoriteViewModel
 import com.example.foodorderingapplication.viewmodel.FoodDetailViewModel
 import com.example.foodorderingapplication.viewmodel.FoodViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -90,6 +93,7 @@ fun FoodDetailScreen(
                     .padding(bottom = 120.dp)
             ) {
                 FoodHeaderSection(
+                    foodItem = it,
                     imageUrl = it.imageUrl,
                     name = it.name,
                     description = it.description,
@@ -125,7 +129,13 @@ fun FoodDetailScreen(
                                 foodId = it.id,
                                 name = it.name,
                                 imageUrl = it.imageUrl,
-                                price = subtotal,
+                                price =  when (selectedPortion) {
+                                    "6" -> it.price
+                                    "8" -> it.price + 2.0
+                                    "10" -> it.price + 4.0
+                                    else -> 0.0
+                                },
+                                subtotal = subtotal,
                                 quantity = quantity,
                                 portion = selectedPortion,
                                 drink = selectedDrink,
@@ -141,11 +151,15 @@ fun FoodDetailScreen(
 
 @Composable
 fun FoodHeaderSection(
+    foodItem: FoodItem,
     imageUrl: String,
     name: String,
     description: String,
-    navController: NavHostController
+    navController: NavHostController,
+    favoriteViewModel: FavoriteViewModel = viewModel()
 ) {
+    val favoriteIds by favoriteViewModel.favoriteFoodIds.collectAsState()
+
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -177,11 +191,11 @@ fun FoodHeaderSection(
                     modifier = Modifier.size(28.dp)
                 )
             }
-            IconButton(onClick = { /* TODO: handle favorite */ }) {
+            IconButton(onClick = { favoriteViewModel.toggleFavorite(foodItem) }) {
                 Icon(
-                    imageVector = Icons.Filled.FavoriteBorder,
+                    imageVector = if (favoriteIds.contains(foodItem.id)) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                     contentDescription = "FavoriteBorder",
-                    tint = Color.White,
+                    tint = Color.Red,
                     modifier = Modifier.size(32.dp)
                 )
             }

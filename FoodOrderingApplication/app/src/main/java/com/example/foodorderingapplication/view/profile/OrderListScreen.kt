@@ -40,8 +40,10 @@ import coil.compose.AsyncImage
 import coil.util.CoilUtils.result
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.model.OrderItem
+import com.example.foodorderingapplication.model.OrderStatus
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.OrderViewModel
+import com.google.common.math.LinearTransformation.horizontal
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -73,9 +75,11 @@ fun OrderListScreen(navController: NavController, orderViewModel: OrderViewModel
 @Composable
 fun OrderItemCardDisplay(order: OrderItem, onClick: () -> Unit) {
     val statusColor = when (order.status) {
-        "Completed" -> Color(0xFF228B22)
-        "Cancelled" -> Color.Red
-        else -> Color(0xFFFFA500)
+        "Preparing" -> Color(0xFFFFC107)
+        "Shipped" -> Color(0xFF2196F3)
+        "Delivered" -> Color(0xFF34A854)
+        "Cancelled" -> Color(0xFFFF5151)
+        else -> Color.Black
     }
 
     Row(
@@ -147,7 +151,7 @@ fun RecentOrdersSection(navController: NavController, viewModel: OrderViewModel 
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
         ) {
             items(recentOrders) { food ->
                 RecentOrderCard(food = food) {
@@ -163,7 +167,7 @@ fun RecentOrdersSection(navController: NavController, viewModel: OrderViewModel 
 fun RecentOrderCard(food: FoodItem, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .width(160.dp)
             .wrapContentHeight()
     ) {
         AsyncImage(
@@ -174,7 +178,7 @@ fun RecentOrderCard(food: FoodItem, onClick: () -> Unit) {
                 .height(120.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .clickable { onClick() },
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(

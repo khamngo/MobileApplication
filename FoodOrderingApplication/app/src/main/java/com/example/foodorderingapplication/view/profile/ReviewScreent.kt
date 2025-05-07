@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,6 +45,7 @@ import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.ReviewViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun ReviewScreen(
@@ -51,12 +54,26 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-
+    val context = LocalContext.current
     LaunchedEffect(orderId) {
         viewModel.fetchOrderItems(orderId)
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    LaunchedEffect(state.submitSuccess) {
+        if (state.submitSuccess) {
+            Toast
+                .makeText(context, "Thanks for your review!", Toast.LENGTH_SHORT)
+                .show()
+            delay(500)
+            viewModel.resetState()
+            navController.popBackStack()
+        }
+    }
+
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.White)) {
         HeaderSection("Review Order") {
             viewModel.resetState()
             navController.popBackStack()
@@ -67,60 +84,63 @@ fun ReviewScreen(
                 CircularProgressIndicator()
             }
         } else {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
                 if (state.foodItems.isEmpty()) {
-                    Text(
-                        text = "No items to review",
-                        color = Color.Red,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                } else {
-                    LazyColumn {
-                        items(state.foodItems) { foodItem ->
-                            ProductRatingLayout(
-                                foodItem = foodItem,
-                                rating = state.ratings[foodItem.id] ?: 0,
-                                onRatingChange = { viewModel.onRatingChange(foodItem.id, it) },
-                                reviewText = state.reviewTexts[foodItem.id] ?: "",
-                                onReviewChange = { viewModel.onReviewTextChange(foodItem.id, it) }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
-                    }
-
-                    if (state.showError) {
+                    item {
                         Text(
-                            text = "Vui lòng chọn số sao và nhập đánh giá cho ít nhất một món!",
+                            text = "No items to review",
                             color = Color.Red,
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
                     }
+                } else {
+                    items(state.foodItems) { foodItem ->
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Button(
-                        onClick = { viewModel.submitReview(orderId) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .height(52.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        enabled = !state.isLoading
-                    ) {
-                        Text("Submit Review", fontSize = 16.sp, color = Color.White)
+                        ProductRatingLayout(
+                            foodItem = foodItem,
+                            rating = state.ratings[foodItem.id] ?: 0,
+                            onRatingChange = { viewModel.onRatingChange(foodItem.id, it) },
+                            reviewText = state.reviewTexts[foodItem.id] ?: "",
+                            onReviewChange = { viewModel.onReviewTextChange(foodItem.id, it) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     }
 
-                    if (state.submitSuccess) {
-                        Text(
-                            text = "Cảm ơn bạn đã đánh giá!",
-                            color = Color(0xFF4CAF50),
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
+                    item {
+                        if (state.showError) {
+                            Text(
+                                text = "Please select number of stars and enter value to select at least one item!",
+                                color = Color.Red,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.submitReview(orderId)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            enabled = !state.isLoading
+                        ) {
+                            Text("Submit Review", fontSize = 16.sp, color = Color.White)
+                        }
+
+//                        if (state.submitSuccess) {
+//                            Text(
+//                                text = "Thanks for your review!",
+//                                color = Color(0xFF4CAF50),
+//                                modifier = Modifier.padding(top = 8.dp)
+//                            )
+//                        }
                     }
                 }
             }
@@ -141,6 +161,7 @@ fun ProductRatingLayout(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
+
         // Food Item Info
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -154,7 +175,10 @@ fun ProductRatingLayout(
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
-            Column {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     text = foodItem.name,
                     fontWeight = FontWeight.Bold,

@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.foodorderingapplication.model.BottomNavItem
+import com.example.foodorderingapplication.ui.theme.FoodOrderingApplicationTheme
 import com.example.foodorderingapplication.view.home.HomeScreen
 import com.example.foodorderingapplication.view.home.IntroScreen
 import com.example.foodorderingapplication.view.home.SignInScreen
@@ -25,6 +26,9 @@ import com.example.foodorderingapplication.view.menu.FoodDetailScreen
 import com.example.foodorderingapplication.view.menu.MenuScreen
 import com.example.foodorderingapplication.view.menu.ThankYouScreen
 import com.example.foodorderingapplication.view.notification.NotificationScreen
+import com.example.foodorderingapplication.view.profile.AboutUsScreen
+import com.example.foodorderingapplication.view.profile.EditReviewScreen
+import com.example.foodorderingapplication.view.profile.FavoriteScreen
 import com.example.foodorderingapplication.view.profile.MyAccountScreen
 import com.example.foodorderingapplication.view.profile.MyReviewScreen
 import com.example.foodorderingapplication.view.profile.OrderDetailScreen
@@ -39,7 +43,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 //        enableEdgeToEdge()
         setContent {
-            NavigationGraph()
+            FoodOrderingApplicationTheme {
+                NavigationGraph()
+            }
         }
     }
 }
@@ -94,11 +100,16 @@ fun NavigationGraph() {
         composable("my_account") { MyAccountScreen(navController = navController) }
         composable("payment_method") { PaymentMethodScreen(navController = navController) }
         composable("my_review") { MyReviewScreen(navController = navController) }
+        composable("my_favorite") { FavoriteScreen(navController = navController) }
         composable("thank_you") { ThankYouScreen(navController = navController) }
-        composable("about_us") { ThankYouScreen(navController = navController) }
+        composable("about_us") { AboutUsScreen(navController = navController) }
         composable("review/{orderId}") { backStackEntry ->
             val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             ReviewScreen(navController = navController, orderId = orderId)
+        }
+        composable("edit_review/{reviewId}") { backStackEntry ->
+            val reviewId = backStackEntry.arguments?.getString("reviewId") ?: ""
+            EditReviewScreen(navController = navController, reviewId = reviewId)
         }
     }
 }

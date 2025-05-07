@@ -1,10 +1,16 @@
 package com.example.foodorderingapplication.view.admin
 
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,12 +21,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,24 +40,60 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.viewmodel.AddFoodViewModel
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
-fun AddFoodScreen(navController: NavController){
-    var foodName by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf("") }
-    var promos by remember { mutableStateOf("") }
-    var promosCode by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
-    var selectedTag by remember { mutableStateOf("Popular") }
+fun AddFoodScreen(navController: NavController) {
+    val viewModel: AddFoodViewModel = viewModel()
+    val context = LocalContext.current
+
+    // Launcher để chọn ảnh từ thư viện
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.uploadImageToFirebase(it) }
+    }
+
+    // Uri tạm để lưu ảnh chụp
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    LaunchedEffect(Unit) {
+        photoUri = createImageFile(context)
+    }
+
+    // Launcher để chụp ảnh
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            photoUri?.let { viewModel.uploadImageToFirebase(it) }
+        }
+    }
+
+    // Collect state directly from ViewModel
+    val foodName by viewModel.foodName.collectAsState()
+    val description by viewModel.description.collectAsState()
+    val price by viewModel.price.collectAsState()
+    val imageUrl by viewModel.imageUrl.collectAsState()
+    val tags by viewModel.tags.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Box(
         modifier = Modifier
@@ -56,26 +102,30 @@ fun AddFoodScreen(navController: NavController){
     ) {
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
-            HeaderSection("Add Food"){
+            HeaderSection("Add Food") {
                 navController.popBackStack()
             }
 
             CustomTextField(
-                value = foodName, onValueChange = { foodName = it }, label = "Food Name"
+                value = foodName,
+                onValueChange = { viewModel.updateField("foodName", it) },
+                label = "Food Name"
             )
             CustomTextField(
-                value = description, onValueChange = { description = it }, label = "Description"
+                value = description,
+                onValueChange = { viewModel.updateField("description", it) },
+                label = "Description"
             )
-            CustomTextField(value = price, onValueChange = { price = it }, label = "Price")
-            CustomTextField(value = promos, onValueChange = { promos = it }, label = "Promos")
             CustomTextField(
-                value = promosCode, onValueChange = { promosCode = it }, label = "Promos Code"
+                value = price,
+                onValueChange = { viewModel.updateField("price", it) },
+                label = "Price"
             )
 
             Column(
@@ -85,45 +135,72 @@ fun AddFoodScreen(navController: NavController){
                 Box {
                     CustomTextField(
                         value = imageUrl,
-                        onValueChange = { imageUrl = it },
+                        onValueChange = { viewModel.updateField("imageUrl", it) },
                         label = "Link image",
                     )
 
-                    IconButton(onClick = {}, modifier = Modifier.align(Alignment.TopEnd)) {
-                        Icon(
-                            Icons.Default.AddCircleOutline,
-                            contentDescription = "Add Image",
-                            Modifier.size(32.dp)
-                        )
+                    Row(modifier = Modifier.align(Alignment.TopEnd)) {
+                        IconButton(
+                            onClick = { pickImageLauncher.launch("image/*") },
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AddCircleOutline,
+                                contentDescription = "Pick Image",
+                                Modifier.size(32.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                photoUri?.let { uri ->
+                                    takePictureLauncher.launch(uri)
+                                }
+                            },
+                            enabled = photoUri != null
+                        ) {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = "Take Photo",
+                                Modifier.size(32.dp)
+                            )
+                        }
                     }
                 }
 
-//                Image(
-//                    painter = painterResource(id = R.drawable.hobakjuk),
-//                    contentDescription = "Sample Image",
-//                    modifier = Modifier
-//                        .size(240.dp, 180.dp)
-//                        .clip(RoundedCornerShape(12.dp)),
-//                    contentScale = ContentScale.Crop
-//                )
+                if (imageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Food Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(240.dp, 180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                }
             }
 
-            // ⬇️ Hiển thị ảnh nếu có URL
-//            if (imageUrl.isNotBlank()) {
-//                AsyncImage(
-//                    model = imageUrl,
-//                    contentDescription = "Food Image",
-//                    contentScale = ContentScale.Crop,
-//                    modifier = Modifier
-//                        .size(240.dp, 180.dp)
-//                        .clip(RoundedCornerShape(12.dp))
-//                )
-//            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text("Select Tags", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                MultiSelectTags(
+                    selectedTags = tags,
+                    onTagsChanged = { viewModel.updateTags(it) }
+                )
+            }
 
-            Column (  horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()       .padding(16.dp)){
-                SelectTagDropdown(
-                    selectedOption = selectedTag,
-                    onOptionSelected = { selectedTag = it }
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = Color.Red,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -132,27 +209,38 @@ fun AddFoodScreen(navController: NavController){
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .background(Color.White) .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .background(Color.White)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             Button(
                 onClick = {
-                    // TODO: Lưu thông tin vào viewModel
+                    viewModel.addFood()
+                    if (viewModel.errorMessage.value.isEmpty()) {
+                        navController.popBackStack()
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                enabled = !isLoading
             ) {
-                Text("Edit", fontSize = 16.sp, color = Color.White)
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Add", fontSize = 16.sp, color = Color.White)
+                }
             }
         }
-
     }
 }
-@Preview(showBackground = true)
-@Composable
-fun Preview3() {
-    NavigationGraph()
-}
 
+// Hàm tạo file tạm để lưu ảnh chụp
+private fun createImageFile(context: Context): Uri? {
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val imageFileName = "JPEG_${timeStamp}_"
+    val storageDir = context.externalCacheDir
+    val file = File.createTempFile(imageFileName, ".jpg", storageDir)
+    return Uri.fromFile(file)
+}

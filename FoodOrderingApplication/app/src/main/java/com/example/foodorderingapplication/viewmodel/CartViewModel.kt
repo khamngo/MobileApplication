@@ -58,6 +58,7 @@ class CartViewModel : ViewModel() {
         val cartItemData = hashMapOf(
             "name" to cartItem.name,
             "price" to cartItem.price,
+            "subtotal" to cartItem.subtotal,
             "quantity" to cartItem.quantity,
             "imageUrl" to cartItem.imageUrl,
             "portion" to cartItem.portion,
@@ -106,19 +107,21 @@ class CartViewModel : ViewModel() {
     }
 
     private fun calculateTotal(items: List<CartItem>) {
-        val totalAmount = items.sumOf { it.price * it.quantity }
+        val totalAmount = items.sumOf { item ->
+
+            val drinkPrice = when (item.drink) {
+                "Coca Cola", "Fanta" -> 0.5
+                else -> 0.0
+            }
+
+            (item.price * item.quantity) + drinkPrice
+        }.roundTo(2)
+
         _total.value = totalAmount
     }
 
-    // Nếu muốn cập nhật tổng tiền lên Firestore (không bắt buộc)
-    private fun updateTotalToFirestore(total: Double) {
-        if (userId.isEmpty()) return
-
-        db.collection("carts").document(userId)
-            .update("total", total)
-            .addOnFailureListener { e ->
-                println("Lỗi khi cập nhật tổng tiền: $e")
-            }
+    fun Double.roundTo(digits: Int): Double {
+        return "%.${digits}f".format(this).toDouble()
     }
 
     fun updateInstructions(foodId: String, instructions: String) {
@@ -130,5 +133,4 @@ class CartViewModel : ViewModel() {
             .addOnSuccessListener { println("Đã cập nhật instructions") }
             .addOnFailureListener { e -> println("Lỗi khi cập nhật instructions: $e") }
     }
-
 }

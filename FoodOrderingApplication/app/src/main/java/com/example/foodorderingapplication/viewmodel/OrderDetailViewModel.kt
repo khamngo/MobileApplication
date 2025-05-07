@@ -21,6 +21,7 @@ import java.util.Locale
 
 class OrderDetailViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     private val _orderDetail = MutableStateFlow<OrderItem?>(null)
     val orderDetail: StateFlow<OrderItem?> = _orderDetail.asStateFlow()
@@ -30,6 +31,9 @@ class OrderDetailViewModel : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _hasReviewed = MutableStateFlow(true)
+    val hasReviewed: StateFlow<Boolean> = _hasReviewed.asStateFlow()
 
     // Lấy chi tiết đơn hàng
     fun fetchOrderDetail(orderId: String) {
@@ -77,11 +81,6 @@ class OrderDetailViewModel : ViewModel() {
                                 isDefault = shippingAddressData?.get("isDefault") as? Boolean ?: false
                             )
 
-                            val orderDateTimestamp = (data?.get("orderDate") ?: "") as? Timestamp
-                            val orderDate = orderDateTimestamp?.toDate()?.let {
-                                SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)
-                            } ?: ""
-
                             _orderDetail.value = OrderItem(
                                 userId = data?.get("userId") as? String ?: "",
                                 items = items,
@@ -99,6 +98,7 @@ class OrderDetailViewModel : ViewModel() {
                                 status = data?.get("status") as? String ?: "Preparing",
                                 orderId = snapshot.id
                             )
+                            checkHasReviewed(orderId, items)
                             _errorMessage.value = ""
                         } catch (ex: Exception) {
                             _errorMessage.value = "Error parsing order: ${ex.message}"
@@ -109,6 +109,28 @@ class OrderDetailViewModel : ViewModel() {
                     _isLoading.value = false
                 }
             }
+    }
+
+    private fun checkHasReviewed(orderId: String, items: List<CartItem>) {
+        viewModelScope.launch {
+            try {
+                val userId = auth.currentUser?.uid ?: return@launch
+                val foodIds = items.map { it.foodId }
+                if (foodIds.isEmpty()) {
+                    _hasReviewed.value = true
+                    return@launch
+                }
+                val snapshot = db.collection("reviews")
+                    .whereEqualTo("userId", userId)
+                    .whereEqualTo("orderId", orderId)
+                    .whereIn("foodId", foodIds)
+                    .get()
+                    .await()
+                _hasReviewed.value = snapshot.size() >= foodIds.size
+            } catch (e: Exception) {
+                _errorMessage.value = "Error checking reviews"
+            }
+        }
     }
 
     // Hủy đơn hàng

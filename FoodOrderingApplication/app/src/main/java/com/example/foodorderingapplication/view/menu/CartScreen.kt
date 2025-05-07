@@ -81,7 +81,7 @@ fun CartScreen(
     val cartItems by viewModel.cartItemItems.collectAsState()
     val total by viewModel.total.collectAsState()
     val foodItems by foodViewModel.popularFoods.collectAsState()
-
+    val foodPrice = foodItems
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -149,9 +149,6 @@ fun CartScreen(
 @Composable
 fun CartItemView(item: CartItem, viewModel: CartViewModel, onClick: () -> Unit) {
     var showDialog by remember { mutableStateOf(false) }
-    var instructionText by remember { mutableStateOf(item.instructions) }
-    var isFocused by remember { mutableStateOf(false) }
-    val focusManager = LocalFocusManager.current
 
     if (showDialog) {
         AlertDialog(

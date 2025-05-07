@@ -15,13 +15,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCard
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -64,8 +70,9 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
     val settingOptions = listOf(
         SettingOption(Icons.Default.Person, "My Account", "my_account"),
         SettingOption(Icons.Default.ShoppingCart, "My Orders", "order"),
+        SettingOption(Icons.Default.Star, "My Reviews", "my_review"),
+        SettingOption(Icons.Default.Favorite, "My Favorite", "my_favorite"),
         SettingOption(Icons.Default.AddCard, "Payment Method", "payment_method"),
-        SettingOption(Icons.Default.StarBorder, "My Reviews", "my_review")
     )
 
     Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
@@ -73,7 +80,7 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF7F7F7))
-                .padding(paddingValues)
+                .padding(paddingValues).verticalScroll(rememberScrollState())
         ) {
             ProfileHeaderSection(userState.username, userState.email,
                 userState.avatarUrl.toString()
@@ -99,30 +106,22 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
             if (showLogoutDialog) {
                 AlertDialog(
                     onDismissRequest = { showLogoutDialog = false },
-                    title = { Text("Xác nhận đăng xuất") },
-                    text = { Text("Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?") },
+                    title = { Text("Confirm logout") },
+                    text = { Text("Are you sure you want to log out of the application?") },
                     confirmButton = {
                         TextButton(onClick = {
                             showLogoutDialog = false
                             viewModel.logout()
                             navController.navigate("login") {
-                                // Clear the back stack so the user can't go back to the Home screen
                                 popUpTo("intro") { inclusive = true }
                             }
-//                            val intent = Intent(context, MainActivity::class.java)
-//                            intent.flags =
-//                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-//                            context.startActivity(intent)
-//                            if (context is Activity) {
-//                                context.finish()
-//                            }
                         }) {
-                            Text("Đồng ý")
+                            Text("Agree")
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showLogoutDialog = false }) {
-                            Text("Hủy")
+                            Text("Cancel")
                         }
                     }
                 )

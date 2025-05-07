@@ -88,11 +88,9 @@ fun NotificationScreen(
                                     if (it.orderId.isNotEmpty()) {
                                         navController.navigate("order_detail/${it.orderId}")
                                     }
-                                }
+                                },
+                                viewModel = viewModel
                             )
-                            IconButton(onClick = { viewModel.deleteNotification(item.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete")
-                            }
                             HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
                         }
                     }
@@ -105,7 +103,8 @@ fun NotificationScreen(
 @Composable
 fun NotificationRow(
     item: NotificationItem,
-    onClick: (NotificationItem) -> Unit
+    onClick: (NotificationItem) -> Unit,
+    viewModel: NotificationViewModel
 ) {
     Row(
         modifier = Modifier
@@ -147,6 +146,9 @@ fun NotificationRow(
             color = Color.Gray
         )
 
+        IconButton(onClick = { viewModel.deleteNotification(item.id) }) {
+            Icon(Icons.Default.Delete, contentDescription = "Delete")
+        }
     }
 }
 

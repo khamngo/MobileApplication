@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.foodorderingapplication.model.BottomNavItem
+import com.example.foodorderingapplication.ui.theme.FoodOrderingApplicationTheme
 import com.example.foodorderingapplication.view.admin.AddFoodScreen
 import com.example.foodorderingapplication.view.admin.AdminAccountScreen
 import com.example.foodorderingapplication.view.admin.CreateNewAccountScreen
@@ -25,7 +26,9 @@ class AdminActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            NavigationGraphAdmin()
+            FoodOrderingApplicationTheme {
+                NavigationGraphAdmin()
+            }
         }
     }
 }
@@ -52,9 +55,9 @@ fun NavigationGraphAdmin() {
         composable("revenue") { RevenueScreen(navController = navController) }
         composable("review") { ReviewListScreen(navController = navController) }
 
-        composable("review/{reviewId}") { backStackEntry ->
-            val reviewId = backStackEntry.arguments?.getString("reviewId") ?: ""
-            ReviewDetailScreen(navController = navController, reviewId = reviewId)
+        composable("review/{foodId}") { backStackEntry ->
+            val foodId = backStackEntry.arguments?.getString("foodId") ?: ""
+            ReviewDetailScreen(navController = navController, foodId = foodId)
         }
         composable("new_account") { CreateNewAccountScreen(navController = navController) }
         composable("admin_account") { AdminAccountScreen(navController = navController) }

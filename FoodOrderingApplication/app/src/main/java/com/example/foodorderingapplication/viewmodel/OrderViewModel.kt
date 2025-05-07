@@ -58,8 +58,14 @@ class OrderViewModel : ViewModel() {
                         }
                     }
                 }
-                _recentOrders.value = items
+
+                // Lọc trùng lặp theo foodId
+                val distinctItems = items.distinctBy { it.id }
+
+                // Gán vào LiveData/StateFlow
+                _recentOrders.value = distinctItems
             }
+
             .addOnFailureListener { e ->
                 println("Order taking error: $e")
             }

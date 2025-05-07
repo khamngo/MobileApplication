@@ -185,9 +185,11 @@ fun ShippingDeliveryPromosSection(viewModel: CheckoutViewModel, navController: N
 
     val subtotal by viewModel.subtotal.collectAsState()
 
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .background(Color.White)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+    ) {
         ShippingRow(
             "SHIPPING",
             fullAddress.ifEmpty { "Add shipping address" }
@@ -387,22 +389,18 @@ fun SummaryRow(
 @Composable
 fun PaymentMethod(viewModel: CheckoutViewModel) {
     val paymentMethod by viewModel.paymentMethod.collectAsState()
-    val orderStatus by viewModel.orderStatus.collectAsState()
 
-    Box(modifier = Modifier
-        .background(Color.White)
-        .fillMaxWidth()) {
-        Column(modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()) {
+    Box(
+        modifier = Modifier
+            .background(Color.White)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
             Text("Payment Method", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            PaymentOption(
-                icon = R.drawable.momo_method, // Icon MoMo
-                title = "MoMo",
-                selected = paymentMethod == "MoMo"
-            ) {
-                viewModel.updatePaymentMethod("MoMo")
-            }
 
             PaymentOption(
                 icon = R.drawable.cod_method,
@@ -412,19 +410,13 @@ fun PaymentMethod(viewModel: CheckoutViewModel) {
                 viewModel.updatePaymentMethod("COD")
             }
 
-//        orderStatus?.let { status ->
-//            if (status.startsWith("Chuyển hướng đến MoMo: ") || status.startsWith("Chuyển hướng đến thanh toán thẻ: ")) {
-//                val paymentUrl = status.substringAfter(": ")
-//                MoMoPaymentWebView(paymentUrl) { success ->
-//                    viewModel.updateOrderStatus(
-//                        orderId = status.substringAfter("orderId=").substringBefore("&"),
-//                        status = if (success) "completed" else "failed"
-//                    )
-//                }
-//            } else {
-//                Text(status, color = if (status.contains("Lỗi")) Color.Red else Color.Green)
-//            }
-//        }
+            PaymentOption(
+                icon = R.drawable.momo_method,
+                title = "MoMo",
+                selected = paymentMethod == "MoMo"
+            ) {
+                viewModel.updatePaymentMethod("MoMo")
+            }
         }
     }
 }

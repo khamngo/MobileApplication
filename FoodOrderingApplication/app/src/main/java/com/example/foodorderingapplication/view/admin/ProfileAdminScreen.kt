@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.admin
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import androidx.compose.foundation.background
@@ -16,7 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAddAlt
+import androidx.compose.material.icons.filled.PersonAddAlt1
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -51,24 +54,24 @@ import com.example.foodorderingapplication.view.profile.ProfileHeaderSection
 import com.example.foodorderingapplication.view.profile.ProfileSettingsSection
 import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
 
+@SuppressLint("ContextCastToActivity")
 @Composable
 fun ProfileAdminScreen(
     navController: NavController,
     viewModel: MyAccountViewModel = viewModel()
 ) {
     val userState by viewModel.user.collectAsState()
-    val context = LocalContext.current
+    val activity = LocalContext.current as? Activity
     val bottomNavItems = listOf(BottomNavItem.Home, BottomNavItem.Profile)
 
     val settingOptions = listOf(
         SettingOption(Icons.Default.Person, "Admin", "admin_account"),
         SettingOption(Icons.Default.ShoppingCart, "Orders", "order"),
         SettingOption(Icons.Default.CreditCard, "Revenue", "revenue"),
-        SettingOption(Icons.Default.StarBorder, "Reviews", "review"),
-        SettingOption(Icons.Default.PersonAddAlt, "New account", "new_account")
+        SettingOption(Icons.Default.Star, "Reviews", "review"),
+        SettingOption(Icons.Default.PersonAddAlt1, "New account", "new_account")
     )
 
-    // State để hiển thị AlertDialog xác nhận đăng xuất
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -109,29 +112,30 @@ fun ProfileAdminScreen(
                 }
             }
 
-            // Hiển thị AlertDialog nếu người dùng nhấn nút "Log out"
             if (showLogoutDialog) {
                 AlertDialog(
                     onDismissRequest = { showLogoutDialog = false },
-                    title = { Text("Xác nhận đăng xuất") },
-                    text = { Text("Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?") },
+                    title = { Text("Confirm logout") },
+                    text = { Text("Are you sure you want to log out of the application?") },
                     confirmButton = {
+
                         TextButton(onClick = {
                             showLogoutDialog = false
                             viewModel.logout()
-                            val intent = Intent(context, MainActivity::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            context.startActivity(intent)
-                            if (context is Activity) {
-                                context.finish()
+
+                            activity?.let {
+                                val intent = Intent(it, MainActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                it.startActivity(intent)
+                                it.finish()
                             }
                         }) {
-                            Text("Đồng ý")
+                            Text("Agree")
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showLogoutDialog = false }) {
-                            Text("Hủy")
+                            Text("Cancel")
                         }
                     }
                 )

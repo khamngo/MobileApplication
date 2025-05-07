@@ -1,33 +1,40 @@
 package com.example.foodorderingapplication.view.admin
 
-import androidx.compose.foundation.Image
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,24 +44,60 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.foodorderingapplication.R
-import com.example.foodorderingapplication.NavigationGraph
+import coil.compose.AsyncImage
 import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.viewmodel.EditFoodViewModel
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun EditFoodScreen(navController: NavController, foodId: String) {
-    var foodName by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf("") }
-    var promos by remember { mutableStateOf("") }
-    var promosCode by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
-    var selectedTag by remember { mutableStateOf("Popular") }
+    val viewModel: EditFoodViewModel = viewModel()
+    val context = LocalContext.current
+
+    // Launcher để chọn ảnh từ thư viện
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.uploadImageToFirebase(it) }
+    }
+
+    // Uri tạm để lưu ảnh chụp
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    LaunchedEffect(Unit) {
+        photoUri = createImageFile(context)
+    }
+
+    // Launcher để chụp ảnh
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            photoUri?.let { viewModel.uploadImageToFirebase(it) }
+        }
+    }
+
+    // Load data when screen initializes
+    LaunchedEffect(foodId) {
+        viewModel.loadFoodData(foodId)
+    }
+    // Collect state directly from ViewModel
+    val foodName by viewModel.foodName.collectAsState()
+    val description by viewModel.description.collectAsState()
+    val price by viewModel.price.collectAsState()
+    val imageUrl by viewModel.imageUrl.collectAsState()
+    val tags by viewModel.tags.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Box(
         modifier = Modifier
@@ -63,26 +106,30 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
     ) {
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
-            HeaderSection("Edit Food"){
+            HeaderSection("Edit Food") {
                 navController.popBackStack()
             }
 
             CustomTextField(
-                value = foodName, onValueChange = { foodName = it }, label = "Food Name"
+                value = foodName,
+                onValueChange = { viewModel.updateField("foodName", it) },
+                label = "Food Name"
             )
             CustomTextField(
-                value = description, onValueChange = { description = it }, label = "Description"
+                value = description,
+                onValueChange = { viewModel.updateField("description", it) },
+                label = "Description"
             )
-            CustomTextField(value = price, onValueChange = { price = it }, label = "Price")
-            CustomTextField(value = promos, onValueChange = { promos = it }, label = "Promos")
             CustomTextField(
-                value = promosCode, onValueChange = { promosCode = it }, label = "Promos Code"
+                value = price,
+                onValueChange = { viewModel.updateField("price", it) },
+                label = "Price"
             )
 
             Column(
@@ -92,45 +139,72 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
                 Box {
                     CustomTextField(
                         value = imageUrl,
-                        onValueChange = { imageUrl = it },
+                        onValueChange = { viewModel.updateField("imageUrl", it) },
                         label = "Link image",
                     )
 
-                    IconButton(onClick = {}, modifier = Modifier.align(Alignment.TopEnd)) {
-                        Icon(
-                            Icons.Default.AddCircleOutline,
-                            contentDescription = "Add Image",
-                            Modifier.size(32.dp)
-                        )
+                    Row(modifier = Modifier.align(Alignment.TopEnd)) {
+                        IconButton(
+                            onClick = { pickImageLauncher.launch("image/*") },
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AddCircleOutline,
+                                contentDescription = "Pick Image",
+                                Modifier.size(32.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                photoUri?.let { uri ->
+                                    takePictureLauncher.launch(uri)
+                                }
+                            },
+                            enabled = photoUri != null
+                        )  {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = "Take Photo",
+                                Modifier.size(32.dp)
+                            )
+                        }
                     }
                 }
 
-//                Image(
-//                    painter = painterResource(id = R.drawable.hobakjuk),
-//                    contentDescription = "Sample Image",
-//                    modifier = Modifier
-//                        .size(240.dp, 180.dp)
-//                        .clip(RoundedCornerShape(12.dp)),
-//                    contentScale = ContentScale.Crop
-//                )
+                if (imageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Food Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(240.dp, 180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                }
             }
 
-            // ⬇️ Hiển thị ảnh nếu có URL
-//            if (imageUrl.isNotBlank()) {
-//                AsyncImage(
-//                    model = imageUrl,
-//                    contentDescription = "Food Image",
-//                    contentScale = ContentScale.Crop,
-//                    modifier = Modifier
-//                        .size(240.dp, 180.dp)
-//                        .clip(RoundedCornerShape(12.dp))
-//                )
-//            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text("Select Tags", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                MultiSelectTags(
+                    selectedTags = tags,
+                    onTagsChanged = { viewModel.updateTags(it) }
+                )
+            }
 
-            Column (  horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()       .padding(16.dp)){
-                SelectTagDropdown(
-                    selectedOption = selectedTag,
-                    onOptionSelected = { selectedTag = it }
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = Color.Red,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -139,79 +213,74 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .background(Color.White) .padding(16.dp)
+                .background(Color.White)
+                .padding(16.dp)
         ) {
             Button(
                 onClick = {
-                    // TODO: Lưu thông tin vào viewModel
+                    viewModel.updateFood(foodId)
+                    if (viewModel.errorMessage.value.isEmpty()) {
+                        navController.popBackStack()
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                enabled = !isLoading
             ) {
-                Text("Edit", fontSize = 16.sp, color = Color.White)
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Edit", fontSize = 16.sp, color = Color.White)
+                }
             }
         }
-
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Hàm tạo file tạm để lưu ảnh chụp
+private fun createImageFile(context: Context): Uri? {
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val imageFileName = "JPEG_${timeStamp}_"
+    val storageDir = context.externalCacheDir
+    val file = File.createTempFile(imageFileName, ".jpg", storageDir)
+    return Uri.fromFile(file)
+}
+
 @Composable
-fun SelectTagDropdown(
-    selectedOption: String,
-    onOptionSelected: (String) -> Unit
+fun MultiSelectTags(
+    selectedTags: List<String>,
+    onTagsChanged: (List<String>) -> Unit
 ) {
-    val options = listOf("Popular", "Deal", "Title", "Explore")
-    var expanded by remember { mutableStateOf(false) }
+    val availableTags = listOf("Popular", "Deal", "Bestseller", "Explore")
+    var selected by remember { mutableStateOf(selectedTags.toSet()) }
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-    ) {
-        TextField(
-            value = selectedOption,
-            onValueChange = {},
-            readOnly = true,
-//            label = { Text("Select Tag") },
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent
-            )
-        )
+    LaunchedEffect(selected) {
+        onTagsChanged(selected.toList())
+    }
 
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { selectionOption ->
-                DropdownMenuItem(
-                    text = { Text(selectionOption) },
-                    onClick = {
-                        onOptionSelected(selectionOption)
-                        expanded = false
+    Column {
+        availableTags.forEach { tag ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = selected.contains(tag),
+                    onCheckedChange = { isChecked ->
+                        selected = if (isChecked) selected + tag else selected - tag
                     }
+                )
+                Text(
+                    text = tag,
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun Preview() {
-    NavigationGraph()
-}

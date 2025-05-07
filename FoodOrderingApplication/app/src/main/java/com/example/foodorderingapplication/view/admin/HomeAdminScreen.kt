@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.admin
 
+import android.R.attr.onClick
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -59,7 +60,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.foodorderingapplication.NavigationGraph
+import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.BottomNavBar
 import com.example.foodorderingapplication.model.BottomNavItem
@@ -69,7 +72,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = viewModel()) {
-    val foodList by viewModel.foods.collectAsState()
+    val foodList by viewModel.exploreFoods.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedFoodItemToDelete by remember { mutableStateOf<FoodItem?>(null) }
 
@@ -79,96 +82,67 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
     )
 
     Scaffold(
-        bottomBar = { BottomNavBar(navController, bottomNavItems) },
-        content = { paddingValues ->
-            Box(
+        bottomBar = { BottomNavBar(navController, bottomNavItems) }
+    ) { paddingValues ->
+        // SỬA Ở ĐÂY: Áp dụng Modifier.padding(paddingValues) trực tiếp cho LazyColumn
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF7F7F7))
+        ) {
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(Color(0xFFF7F7F7))
+                    .padding(paddingValues) // Đặt ở đây, không bọc bên ngoài Box
+                    .background(Color.White)
             ) {
-
-                // Show the list
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White)
-                ) {
-                    item { TopBar() }
-                    items(foodList) { food ->
-                        FoodCard(
-                            foodItem = food,
-                            onEdit = { navController.navigate("edit_food/${food.id}") },
-                            onDelete = {
-                                selectedFoodItemToDelete = food
-                                showDeleteDialog = true
-                            }
-                        )
-                    }
-                }
-                if (showDeleteDialog && selectedFoodItemToDelete != null) {
-                    AlertDialog(
-                        onDismissRequest = { showDeleteDialog = false },
-                        title = { Text("Delete Confirmation") },
-                        text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                selectedFoodItemToDelete?.let { food ->
-                                    viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
-                                }
-                                showDeleteDialog = false
-                            }) {
-                                Text("Delete", color = Color.Red)
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDeleteDialog = false }) {
-                                Text("Cancel")
-                            }
+                item { TopBar() }
+                items(foodList) { food ->
+                    FoodCard(
+                        foodItem = food,
+                        onEdit = { navController.navigate("edit_food/${food.id}") },
+                        onDelete = {
+                            selectedFoodItemToDelete = food
+                            showDeleteDialog = true
                         }
                     )
-                }
-
-                if (showDeleteDialog && selectedFoodItemToDelete != null) {
-                    AlertDialog(
-                        onDismissRequest = { showDeleteDialog = false },
-                        title = { Text("Delete Confirmation") },
-                        text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                selectedFoodItemToDelete?.let { food ->
-                                    viewModel.deleteFood(food.id) // Gọi ViewModel để xóa
-                                }
-                                showDeleteDialog = false
-                            }) {
-                                Text("Delete", color = Color.Red)
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDeleteDialog = false }) {
-                                Text("Cancel")
-                            }
-                        }
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.align(Alignment.BottomEnd)
-                ) {
-                    DraggableAddIcon(navController = navController)
                 }
             }
+
+            // DraggableAddIcon nằm trong Box này sẽ được hiển thị đúng
+            DraggableAddIcon(navController = navController)
+
+            // AlertDialog vẫn giữ nguyên
+            if (showDeleteDialog && selectedFoodItemToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("Delete Confirmation") },
+                    text = { Text("Are you sure you want to delete \"${selectedFoodItemToDelete?.name}\"?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            selectedFoodItemToDelete?.let { food ->
+                                viewModel.deleteFood(food.id)
+                            }
+                            showDeleteDialog = false
+                        }) {
+                            Text("Delete", color = Color.Red)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
         }
-    )
+    }
+
 }
 
 @SuppressLint("DefaultLocale")
 @Composable
 fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val context = LocalContext.current
-    val imageId = remember(foodItem.imageUrl) {
-        context.resources.getIdentifier(foodItem.imageUrl, "drawable", context.packageName)
-    }
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier
@@ -183,13 +157,15 @@ fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = imageId),
+            AsyncImage(
+                model = foodItem.imageUrl,
                 contentDescription = foodItem.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp)),
+                placeholder = painterResource(id = R.drawable.placeholder),
+                error = painterResource(id = R.drawable.image_error)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -204,7 +180,7 @@ fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
                     color = Color.Red,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(text = "Category: ${foodItem.name}")
+                Text(text = "Category: ${foodItem.tags}")
                 Text(text = "Description: ${foodItem.description}")
             }
 
@@ -212,10 +188,10 @@ fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
                 horizontalAlignment = Alignment.End
             ) {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFFFFD700))
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
                 }
             }
         }
@@ -251,7 +227,7 @@ fun DraggableAddIcon(navController: NavController) {
                 .clip(CircleShape)
                 .background(Color(0xFFFFD700))
                 .align(Alignment.Center)
-                .clickable { navController.navigate("cart") }
+                .clickable { navController.navigate("add_food") }
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()

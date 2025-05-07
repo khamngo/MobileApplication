@@ -43,6 +43,7 @@ android {
 }
 
 dependencies {
+    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
     implementation("com.google.android.material:material:1.9.0")
     implementation("com.google.firebase:firebase-messaging-ktx:23.4.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -50,9 +51,6 @@ dependencies {
     implementation("io.ktor:ktor-client-android:2.3.7")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
-
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("com.patrykandpatrick.vico:compose:1.9.0")

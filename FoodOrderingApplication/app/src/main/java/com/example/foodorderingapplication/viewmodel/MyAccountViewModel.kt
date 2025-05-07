@@ -12,6 +12,7 @@ import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,10 +32,11 @@ class MyAccountViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // Lưu giá trị tạm thời từ UI
     private var tempUsername: String = ""
     private var tempEmail: String = ""
     private var tempPhone: String? = null
+
+    private var profileListener: ListenerRegistration? = null
 
     init {
         fetchUserData()
@@ -43,7 +45,6 @@ class MyAccountViewModel : ViewModel() {
     private fun fetchUserData() {
         val currentUser = auth.currentUser
         currentUser?.let { user ->
-            // Khởi tạo dữ liệu ban đầu từ FirebaseUser
             _user.value = UserItem(
                 uid = user.uid,
                 username = user.displayName ?: "",
@@ -52,8 +53,7 @@ class MyAccountViewModel : ViewModel() {
                 avatarUrl = user.photoUrl?.toString()
             )
 
-            // Sử dụng snapshot listener để cập nhật từ Firestore
-            db.collection("users").document(user.uid)
+            profileListener = db.collection("users").document(user.uid)
                 .collection("profile").document("info")
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
@@ -69,7 +69,6 @@ class MyAccountViewModel : ViewModel() {
                             phone = profile?.get("phone") as? String ?: user.phoneNumber,
                             avatarUrl = user.photoUrl?.toString()
                         )
-                        // Cập nhật giá trị tạm thời
                         tempUsername = user.displayName ?: ""
                         tempEmail = user.email ?: ""
                         tempPhone = profile?.get("phone") as? String ?: user.phoneNumber
@@ -82,14 +81,17 @@ class MyAccountViewModel : ViewModel() {
 
     fun updateUsername(newUsername: String) {
         _user.value = _user.value.copy(username = newUsername)
+        tempUsername = newUsername
     }
 
     fun updateEmail(newEmail: String) {
         _user.value = _user.value.copy(email = newEmail)
+        tempEmail = newEmail
     }
 
     fun updatePhone(newPhone: String) {
         _user.value = _user.value.copy(phone = newPhone)
+        tempPhone = newPhone
     }
 
     fun updateUserProfile(password: String, confirmPassword: String, currentPassword: String) {
@@ -98,7 +100,6 @@ class MyAccountViewModel : ViewModel() {
             try {
                 val user = auth.currentUser ?: throw IllegalArgumentException("User not logged in")
 
-                // Validate input
                 when {
                     tempUsername.isBlank() -> throw IllegalArgumentException("Username cannot be empty")
                     tempEmail.isBlank() -> throw IllegalArgumentException("Email cannot be empty")
@@ -110,21 +111,21 @@ class MyAccountViewModel : ViewModel() {
                     currentPassword.isBlank() -> throw IllegalArgumentException("Current password is required")
                 }
 
-                // Re-authenticate user
+                // Re-authenticate
                 val credential = EmailAuthProvider.getCredential(user.email!!, currentPassword)
                 user.reauthenticate(credential).await()
 
-                // Cập nhật email nếu thay đổi
+                // Update email if changed
                 if (tempEmail != user.email) {
                     user.updateEmail(tempEmail).await()
                 }
 
-                // Cập nhật mật khẩu nếu có
+                // Update password if entered
                 if (password.isNotEmpty()) {
                     user.updatePassword(password).await()
                 }
 
-                // Cập nhật username (displayName) trong FirebaseUser
+                // Update displayName if changed
                 if (tempUsername != user.displayName) {
                     val profileUpdates = UserProfileChangeRequest.Builder()
                         .setDisplayName(tempUsername)
@@ -132,7 +133,7 @@ class MyAccountViewModel : ViewModel() {
                     user.updateProfile(profileUpdates).await()
                 }
 
-                // Cập nhật Firestore
+                // Update Firestore
                 val userMap = mapOf(
                     "username" to tempUsername,
                     "email" to tempEmail,
@@ -161,13 +162,9 @@ class MyAccountViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        // Hủy snapshot listener
-        db.collection("users").document(auth.currentUser?.uid ?: "")
-            .collection("profile").document("info")
-            .addSnapshotListener { _, _ -> }.remove()
+        profileListener?.remove()
         super.onCleared()
     }
-
 
     fun logout() {
         auth.signOut()

@@ -99,23 +99,23 @@ fun OrderDetailScreen(
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Xác nhận") },
-            text = { Text("Bạn có chắc chắn muốn duyệt đơn hàng này không?") },
+            title = { Text("Confirm") },
+            text = { Text("Are you sure you want to approve this order?") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showConfirmDialog = false
                         viewModel.acceptOrder(orderId) {
-                            Toast.makeText(context, "Đơn hàng đã duyệt thành công!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Order approved successfully!", Toast.LENGTH_SHORT).show()
                         }
                     }
                 ) {
-                    Text("Đồng ý")
+                    Text("Agree")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showConfirmDialog = false }) {
-                    Text("Hủy")
+                    Text("Cancel")
                 }
             }
         )
@@ -125,24 +125,15 @@ fun OrderDetailScreen(
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
-            title = { Text("Xác nhận hủy đơn hàng") },
-            text = { Text("Bạn có chắc chắn muốn hủy đơn hàng này?") },
+            title = { Text("Confirm Cancel") },
+            text = { Text("Are you sure you want to cancel this order?") },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.cancelOrder(orderId) {
-                            showCancelDialog = false
-                            Toast.makeText(context, "Đơn hàng đã hủy thành công!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                ) {
-                    Text("Xác nhận")
-                }
+                TextButton(onClick = {
+                    viewModel.cancelOrder(orderId) { showCancelDialog = false }
+                }) { Text("Yes") }
             },
             dismissButton = {
-                Button(onClick = { showCancelDialog = false }) {
-                    Text("Hủy")
-                }
+                TextButton(onClick = { showCancelDialog = false }) { Text("No") }
             }
         )
     }
@@ -382,7 +373,7 @@ fun OrderItemCard(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         Column {
             Row(

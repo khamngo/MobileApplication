@@ -1,45 +1,26 @@
 package com.example.foodorderingapplication.viewmodel
 
-import android.net.http.HttpResponseCache.install
-import android.os.Build
 import android.util.Log
-import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import coil.util.CoilUtils.result
 import com.example.foodorderingapplication.model.CartItem
-import com.example.foodorderingapplication.model.MoMoRequest
-import com.example.foodorderingapplication.model.MoMoResponse
 import com.example.foodorderingapplication.model.OrderItem
 import com.example.foodorderingapplication.model.RestaurantItem
 import com.example.foodorderingapplication.model.ShippingAddress
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import java.util.Base64
 import kotlin.math.roundToInt
 
 class CheckoutViewModel : ViewModel() {
@@ -87,14 +68,19 @@ class CheckoutViewModel : ViewModel() {
     private val _shippingAddress = MutableStateFlow(ShippingAddress())
     val shippingAddress: StateFlow<ShippingAddress> = _shippingAddress
 
-    private val _deliveryDate = MutableStateFlow("")
+    private val dateFormat = SimpleDateFormat("EEEE, dd/MM/yyyy", Locale.ENGLISH)
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.ENGLISH)
+
+    private val calendar = Calendar.getInstance()
+    private val _deliveryDate = MutableStateFlow(dateFormat.format(calendar.time))
     val deliveryDate: StateFlow<String> = _deliveryDate
 
-    private val _deliveryTime = MutableStateFlow("")
+    private val _deliveryTime = MutableStateFlow(timeFormat.format(calendar.time))
     val deliveryTime: StateFlow<String> = _deliveryTime
 
+
     // Phương thức thanh toán
-    private val _paymentMethod = MutableStateFlow("Cash on Delivery")
+    private val _paymentMethod = MutableStateFlow("COD")
     val paymentMethod: StateFlow<String> = _paymentMethod
 
     private val _orderStatus = MutableStateFlow<String?>(null)

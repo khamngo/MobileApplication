@@ -120,7 +120,7 @@ class AdminOrderDetailViewModel : ViewModel() {
                     throw IllegalArgumentException("Can only accept orders in Preparing status")
                 }
                 db.collection("orders").document(orderId)
-                    .update("status", OrderStatus.Shipped.name)
+                    .update("status", OrderStatus.Delivered.name)
                     .await()
                 _errorMessage.value = "Order accepted successfully"
                 sendNotification(

@@ -25,7 +25,7 @@ class MyReviewViewModel : ViewModel() {
         fetchReviews()
     }
 
-    private fun fetchReviews() {
+    internal fun fetchReviews() {
         val userId = auth.currentUser?.uid ?: return
         db.collection("reviews")
             .whereEqualTo("userId", userId)
@@ -43,6 +43,7 @@ class MyReviewViewModel : ViewModel() {
                                 val timestamp = doc.getTimestamp("timestamp") ?: Timestamp.now()
                                 val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
                                 ReviewItem(
+                                    reviewId = doc.id,
                                     foodId = foodId,
                                     foodName = foodDoc.getString("name") ?: "",
                                     imageUrl = foodDoc.getString("imageUrl") ?: "",
@@ -60,4 +61,16 @@ class MyReviewViewModel : ViewModel() {
                 }
             }
     }
+
+    fun deleteReview(reviewId: String) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("reviews")
+            .document(reviewId)
+            .delete()
+            .addOnSuccessListener {
+                // Xoá review khỏi danh sách hiện tại
+                _reviews.value = _reviews.value.filterNot { it.reviewId == reviewId }
+            }
+    }
+
 }

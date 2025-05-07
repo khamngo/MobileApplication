@@ -24,6 +24,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -32,6 +33,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
@@ -72,6 +74,7 @@ import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.view.BottomNavBar
 import com.example.foodorderingapplication.viewmodel.CartViewModel
+import com.example.foodorderingapplication.viewmodel.FavoriteViewModel
 import com.example.foodorderingapplication.viewmodel.FoodViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -128,7 +131,7 @@ fun TopBar() {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFFFD700)) // Màu vàng
+            .background(Color(0xFFFFD700))
             .padding(16.dp),
     ) {
         Row(
@@ -335,10 +338,11 @@ fun CategoryItem(text: String, icon: ImageVector, navController: NavController, 
 @Composable
 fun FoodListSection(
     viewModel: FoodViewModel = viewModel(),
-    navController: NavController,
+    navController: NavController, favoriteViewModel: FavoriteViewModel = viewModel()
 ) {
     val explore by viewModel.exploreFoods.collectAsState()
     val bestseller by viewModel.bestsellerFoods.collectAsState()
+    val favoriteIds by favoriteViewModel.favoriteFoodIds.collectAsState()
 
     Column(modifier = Modifier.padding(16.dp))
     {
@@ -367,9 +371,12 @@ fun FoodListSection(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             explore.forEach { food ->
-                LargeFoodItem(food, onClick = {
-                    navController.navigate("food_detail/${food.id}")
-                })
+                LargeFoodItem(
+                    foodItem = food,
+                    onClick = { navController.navigate("food_detail/${food.id}") },
+                    isFavorite = favoriteIds.contains(food.id),
+                    onToggleFavorite = { favoriteViewModel.toggleFavorite(food) }
+                )
             }
         }
     }
@@ -456,7 +463,13 @@ fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
 }
 
 @Composable
-fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
+fun LargeFoodItem(
+    foodItem: FoodItem,
+    onClick: () -> Unit,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit
+) {
+
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
@@ -495,12 +508,14 @@ fun LargeFoodItem(foodItem: FoodItem, onClick: () -> Unit) {
                     .padding(8.dp)
                     .align(Alignment.TopEnd)
             ) {
-                Icon(
-                    imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = "Favorite",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = "FavoriteBorder",
+                        tint = Color.Red,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
 

@@ -1,6 +1,5 @@
 package com.example.foodorderingapplication.view.profile
 
-import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContent
@@ -14,10 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -36,12 +32,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -50,12 +43,10 @@ import androidx.core.app.ComponentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.foodorderingapplication.R
-import com.example.foodorderingapplication.model.CartItem
 import com.example.foodorderingapplication.model.OrderItem
 import com.example.foodorderingapplication.model.OrderStatus
 import com.example.foodorderingapplication.view.HeaderSection
-import com.example.foodorderingapplication.viewmodel.AdminOrderDetailViewModel
+import com.example.foodorderingapplication.view.admin.DeliveryStatusSection
 import com.example.foodorderingapplication.viewmodel.OrderDetailViewModel
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -68,77 +59,49 @@ import java.util.Locale
 fun OrderDetailScreen(
     navController: NavController,
     orderId: String,
-    viewModel: AdminOrderDetailViewModel = viewModel()
+    viewModel: OrderDetailViewModel = viewModel()
 ) {
     val orderDetail by viewModel.orderDetail.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
+    val hasReviewed by viewModel.hasReviewed.collectAsState()
 
-    var showConfirmDialog by remember { mutableStateOf(false) }
+    // Dialog xác nhận hủy
     var showCancelDialog by remember { mutableStateOf(false) }
+
+    // State cho picker
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf("") }
     var selectedTime by remember { mutableStateOf("") }
 
+    // Gọi fetchOrderDetail khi khởi tạo
     LaunchedEffect(orderId) {
         viewModel.fetchOrderDetail(orderId)
-    }
-
-    // Dialog xác nhận duyệt
-    if (showConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Xác nhận") },
-            text = { Text("Bạn có chắc chắn muốn duyệt đơn hàng này không?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showConfirmDialog = false
-                        viewModel.acceptOrder(orderId) {
-                            Toast.makeText(context, "Đơn hàng đã duyệt thành công!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                ) {
-                    Text("Đồng ý")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showConfirmDialog = false }) {
-                    Text("Hủy")
-                }
-            }
-        )
     }
 
     // Dialog xác nhận hủy
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
-            title = { Text("Xác nhận hủy đơn hàng") },
-            text = { Text("Bạn có chắc chắn muốn hủy đơn hàng này?") },
+            title = { Text("Confirm Cancel") },
+            text = { Text("Are you sure you want to cancel this order?") },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.cancelOrder(orderId) {
-                            showCancelDialog = false
-                            Toast.makeText(context, "Đơn hàng đã hủy thành công!", Toast.LENGTH_SHORT).show()
-                        }
+                TextButton(onClick = {
+                    viewModel.cancelOrder(orderId) {
+                        showCancelDialog = false
+                        Toast.makeText(context, "Order cancelled successfully!", Toast.LENGTH_SHORT).show()
                     }
-                ) {
-                    Text("Xác nhận")
-                }
+                }) { Text("Yes") }
             },
             dismissButton = {
-                Button(onClick = { showCancelDialog = false }) {
-                    Text("Hủy")
-                }
+                TextButton(onClick = { showCancelDialog = false }) { Text("No") }
             }
         )
     }
 
-    // DatePicker và TimePicker cho Buy Again
+    // DatePicker và TimePicker
     if (showDatePicker) {
         val datePicker = MaterialDatePicker.Builder.datePicker()
             .setTitleText("Select Delivery Date")
@@ -151,7 +114,7 @@ fun OrderDetailScreen(
             showTimePicker = true
         }
         datePicker.addOnDismissListener { showDatePicker = false }
-        datePicker.show((context as ComponentActivity).supportFragmentManager, "DATE_PICKER")
+        datePicker.show((context as AppCompatActivity).supportFragmentManager, "DATE_PICKER")
     }
 
     if (showTimePicker) {
@@ -169,193 +132,97 @@ fun OrderDetailScreen(
                 selectedDate = ""
                 selectedTime = ""
                 showTimePicker = false
-                Toast.makeText(context, "Đơn hàng mới đã được tạo!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "New order created!", Toast.LENGTH_SHORT).show()
             }
         }
         timePicker.addOnDismissListener { showTimePicker = false }
-        timePicker.show((context as ComponentActivity).supportFragmentManager, "TIME_PICKER")
+        timePicker.show((context as AppCompatActivity).supportFragmentManager, "TIME_PICKER")
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .verticalScroll(rememberScrollState())
+            .background(Color(0xFFF7F7F7))
     ) {
-        HeaderSection("Order Detail") {
-            navController.popBackStack()
-        }
-
-        // Thông báo trong UI
-        if (errorMessage.isNotEmpty()) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else if (orderDetail == null) {
             Text(
-                text = errorMessage,
-                color = if (errorMessage.contains("successfully")) Color.Green else Color.Red,
-                fontSize = 14.sp,
+                text = "Order not found",
+                modifier = Modifier.align(Alignment.Center),
+                fontSize = 16.sp,
+                color = Color.Red
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 120.dp)
+            ) {
+                // Header
+                HeaderSection("Order Detail") {
+                    navController.popBackStack()
+                }
+
+                // Thông báo trong UI
+                if (errorMessage.isNotEmpty()) {
+                    Text(
+                        text = errorMessage,
+                        color = if (errorMessage.contains("successfully")) Color.Green else Color.Red,
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // Status delivery progress
+                DeliveryStatusSection(orderDetail!!.status)
+
+                HorizontalDivider()
+
+                // From / To Info
+                FromToInfo(orderDetail!!)
+
+                HorizontalDivider()
+
+                // Order Detail
+                OrderDetailContent(orderDetail!!)
+
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            // Subtotal & Button
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                textAlign = TextAlign.Center
-            )
-        }
-
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                    .align(Alignment.BottomCenter)
+                    .background(Color.White)
+                    .padding(16.dp)
             ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            orderDetail?.let { order ->
-                DeliveryStatusSection(order.status)
-                HorizontalDivider()
-                OrderItemCard(
-                    order = order,
-                    onAcceptClick = { showConfirmDialog = true },
-                    onCancelClick = { showCancelDialog = true },
-                    onBuyAgainClick = { showDatePicker = true },
-                    onReviewClick = { navController.navigate("review/$orderId") }
+                OrderActionButton(
+                    orderStatus = OrderStatus.valueOf(orderDetail?.status ?: "Preparing"),
+                    onCancel = { showCancelDialog = true },
+                    onBuyAgain = { showDatePicker = true },
+                    onReview = { navController.navigate("review/$orderId") },
+                    hasReviewed = hasReviewed
                 )
-            } ?: run {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Order not found", fontSize = 16.sp, color = Color.Red)
-                }
             }
         }
     }
 }
 
 @Composable
-fun DeliveryStatusSection(status: String) {
-    val statusIndex = when (status) {
-        OrderStatus.Preparing.name -> 0
-        OrderStatus.Shipped.name -> 1
-        OrderStatus.Delivered.name -> 2
-        OrderStatus.Cancelled.name -> -1
-        else -> 0
-    }
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            "Delivery Status",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 16.dp)
-        )
-
-        AnimatedContent(
-            targetState = statusIndex,
-            transitionSpec = {
-                fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
-            }
-        ) { targetIndex ->
-            if (targetIndex == -1) {
-                Text(
-                    "Order Cancelled",
-                    fontSize = 16.sp,
-                    color = Color.Red,
-                    modifier = Modifier.padding(16.dp)
-                )
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.List,
-                            contentDescription = null,
-                            tint = if (targetIndex >= 0) Color(0xFFFFD700) else Color.Gray,
-                            modifier = Modifier.scale(if (targetIndex >= 0) 1.2f else 1.0f)
-                        )
-                        Text("Preparing", fontSize = 12.sp)
-                    }
-                    HorizontalDivider(
-                        modifier = Modifier.width(40.dp),
-                        color = if (targetIndex >= 1) Color(0xFFFFD700) else Color.Gray
-                    )
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.LocalShipping,
-                            contentDescription = null,
-                            tint = if (targetIndex >= 1) Color(0xFFFFD700) else Color.Gray,
-                            modifier = Modifier.scale(if (targetIndex >= 1) 1.2f else 1.0f)
-                        )
-                        Text("Shipped", fontSize = 12.sp)
-                    }
-                    HorizontalDivider(
-                        modifier = Modifier.width(40.dp),
-                        color = if (targetIndex >= 2) Color(0xFFFFD700) else Color.Gray
-                    )
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.Home,
-                            contentDescription = null,
-                            tint = if (targetIndex >= 2) Color(0xFFFFD700) else Color.Gray,
-                            modifier = Modifier.scale(if (targetIndex >= 2) 1.2f else 1.0f)
-                        )
-                        Text("Delivered", fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun OrderItemCard(
-    order: OrderItem,
-    onAcceptClick: () -> Unit,
-    onCancelClick: () -> Unit,
-    onBuyAgainClick: () -> Unit,
-    onReviewClick: () -> Unit
-) {
-    val formattedDate = SimpleDateFormat("h a : dd-MM-yyyy", Locale.getDefault())
-        .format(order.orderDate.toDate())
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
-
+fun FromToInfo(order: OrderItem) {
     Column(
         modifier = Modifier
+            .padding(16.dp)
             .fillMaxWidth()
-            .padding(18.dp)
-            .background(Color.White),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Time & Status
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = formattedDate,
-                fontSize = 14.sp,
-                color = Color.Gray,
-                fontStyle = FontStyle.Italic
-            )
-            Text(
-                text = order.status,
-                fontSize = 16.sp,
-                color = when (order.status) {
-                    "Preparing" -> Color(0xFFFFC107)
-                    "Shipped" -> Color(0xFF2196F3)
-                    "Delivered" -> Color(0xFF34A854)
-                    "Cancelled" -> Color(0xFFFF5151)
-                    else -> Color.Black
-                },
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // From / To Info
         Column {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -394,185 +261,246 @@ fun OrderItemCard(
             )
             Text(
                 "${order.shippingAddress.firstName} ${order.shippingAddress.lastName} - " +
-                        "${order.shippingAddress.phoneNumber}",
+                        order.shippingAddress.phoneNumber,
                 color = Color.Gray,
                 fontSize = 12.sp
             )
         }
+    }
+}
+
+@Composable
+fun OrderDetailContent(order: OrderItem) {
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val orderDate = dateFormat.format(order.orderDate.toDate())
+
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Order detail", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+        order.items.forEach { item ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
+                    .fillMaxWidth()
+            ) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(item.name, fontWeight = FontWeight.Bold)
+                    if (item.portion.isNotEmpty()) {
+                        Text("Portion: ${item.portion}")
+                    }
+                    if (item.drink.isNotEmpty()) {
+                        Text("Drink: ${item.drink}")
+                    }
+                    if (item.instructions.isNotEmpty()) {
+                        Text("Instructions: ${item.instructions}")
+                    }
+                    Text("Quantity: ${item.quantity}")
+                }
+
+                Text(
+                    currencyFormat.format(item.price * item.quantity),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        OrderInfoRow("Order id:", order.orderId)
+        OrderInfoRow("Order date:", orderDate)
+        OrderInfoRow("Delivery date:", order.deliveryDate)
+        OrderInfoRow("Delivery time:", order.deliveryTime)
+        OrderInfoRow("Payment method:", order.paymentMethod)
+        OrderInfoRow("Promo:", order.promo.ifEmpty { "None" })
+        OrderInfoRow("Subtotal:", currencyFormat.format(order.subtotal))
+        OrderInfoRow("Shipping fee:", currencyFormat.format(order.shippingFee))
+        OrderInfoRow("Taxes:", currencyFormat.format(order.taxes))
+        OrderInfoRow("Discount:", currencyFormat.format(order.discount))
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        // List Cart Items
-        Text("Order Items", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        order.items.forEach { cartItem ->
-            CartItemRow(cartItem)
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-        // Order Information
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Order Information", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            InfoRow("Order ID:", order.orderId)
-            InfoRow("First Name:", order.shippingAddress.firstName)
-            InfoRow("Last Name:", order.shippingAddress.lastName)
-            InfoRow("Phone Number:", order.shippingAddress.phoneNumber)
-            InfoRow(
-                "Address:",
-                "${order.shippingAddress.street}, ${order.shippingAddress.ward}, " +
-                        "${order.shippingAddress.district}, ${order.shippingAddress.province}"
-            )
-            InfoRow("Delivery Date:", order.deliveryDate)
-            InfoRow("Delivery Time:", order.deliveryTime)
-            InfoRow("Promo:", order.promo.ifEmpty { "None" })
-            InfoRow("Payment Method:", order.paymentMethod)
-            InfoRow("Subtotal:", currencyFormat.format(order.subtotal))
-            InfoRow("Shipping Fee:", currencyFormat.format(order.shippingFee))
-            InfoRow("Taxes:", currencyFormat.format(order.taxes))
-            InfoRow("Discount:", currencyFormat.format(order.discount))
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
-
-        // Total & Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Text("Total:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(
-                text = "Total: ${currencyFormat.format(order.total)}",
-                fontSize = 18.sp,
+                currencyFormat.format(order.total),
+                fontWeight = FontWeight.Bold,
                 color = Color.Red,
-                fontWeight = FontWeight.Bold
+                fontSize = 16.sp
             )
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.weight(1f))
+@Composable
+fun OrderInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label)
+        Text(value)
+    }
+}
 
-            if (order.status == OrderStatus.Preparing.name) {
+@Composable
+fun OrderActionButton(
+    orderStatus: OrderStatus,
+    onCancel: () -> Unit,
+    onBuyAgain: () -> Unit,
+    onReview: () -> Unit,
+    hasReviewed: Boolean
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        when (orderStatus) {
+            OrderStatus.Preparing -> {
                 Button(
-                    onClick = onCancelClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    shape = RoundedCornerShape(8.dp)
+                    onClick = onCancel,
+                    enabled = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFD700)
+                    )
                 ) {
-                    Text("Cancel", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Cancel Order",
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-
-                Spacer(modifier = Modifier.padding(end = 6.dp))
-
-                Button(
-                    onClick = onAcceptClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Accept", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+            OrderStatus.Delivered -> {
+                if (hasReviewed) {
+                    Button(
+                        onClick = onBuyAgain,
+                        enabled = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFD700)
+                        )
+                    ) {
+                        Text(
+                            "Buy Again",
+                            fontSize = 16.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = onBuyAgain,
+                            enabled = true,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFD700)
+                            )
+                        ) {
+                            Text(
+                                "Buy Again",
+                                fontSize = 16.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Button(
+                            onClick = onReview,
+                            enabled = true,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFD700)
+                            )
+                        ) {
+                            Text(
+                                "Review",
+                                fontSize = 16.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
-            } else if (order.status == OrderStatus.Delivered.name) {
+            }
+            OrderStatus.Shipped -> {
                 Button(
-                    onClick = onBuyAgainClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    shape = RoundedCornerShape(8.dp)
+                    onClick = { },
+                    enabled = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        disabledContainerColor = Color(0xFFE0E0E0),
+                        disabledContentColor = Color.DarkGray
+                    )
                 ) {
-                    Text("Buy Again", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        "In Transit",
+                        fontSize = 16.sp,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-
-                Spacer(modifier = Modifier.padding(end = 6.dp))
-
+            }
+            OrderStatus.Cancelled -> {
                 Button(
-                    onClick = onReviewClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    shape = RoundedCornerShape(8.dp)
+                    onClick = { },
+                    enabled = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        disabledContainerColor = Color(0xFFE0E0E0),
+                        disabledContentColor = Color.DarkGray
+                    )
                 ) {
-                    Text("Review", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Cancelled",
+                        fontSize = 16.sp,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun CartItemRow(cartItem: CartItem) {
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        AsyncImage(
-            model = cartItem.imageUrl,
-            contentDescription = cartItem.name,
-            modifier = Modifier
-                .size(84.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop,
-            placeholder = painterResource(id = R.drawable.placeholder)
-        )
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = cartItem.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Text(
-                text = currencyFormat.format(cartItem.price * cartItem.quantity),
-                fontSize = 14.sp,
-                color = Color.Red,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Quantity: ${cartItem.quantity}",
-                fontSize = 14.sp
-            )
-            Text(
-                text = "Portion: ${cartItem.portion}",
-                fontSize = 14.sp
-            )
-            Text(
-                text = "Drink: ${cartItem.drink}",
-                fontSize = 14.sp
-            )
-            Text(
-                text = "Note: ${cartItem.instructions}",
-                fontSize = 14.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun InfoRow(label: String, value: String) {
-    Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Text(text = label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text(text = value, fontSize = 14.sp, color = Color.Black)
-    }
-}
-
-@Composable
-fun HeaderSection(title: String, onBackClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBackClick) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-        }
-        Text(
-            text = title,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 8.dp)
-        )
     }
 }
 
@@ -587,4 +515,3 @@ fun HorizontalDivider(
         thickness = 1.dp
     )
 }
-

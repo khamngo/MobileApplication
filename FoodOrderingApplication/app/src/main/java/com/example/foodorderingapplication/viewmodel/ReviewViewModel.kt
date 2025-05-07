@@ -13,8 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-
-
 class ReviewViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -29,7 +27,6 @@ class ReviewViewModel : ViewModel() {
                 val orderDoc = db.collection("orders").document(orderId).get().await()
                 val items = (orderDoc.get("items") as? List<Map<String, Any>>)?.map {
                     val foodId = it["foodId"] as? String ?: ""
-                    // Lấy thông tin món ăn từ foods/{foodId}
                     val foodDoc = db.collection("foods").document(foodId).get().await()
                     FoodItem(
                         id = foodId,
@@ -40,7 +37,9 @@ class ReviewViewModel : ViewModel() {
                 } ?: emptyList()
                 _uiState.value = _uiState.value.copy(
                     foodItems = items,
-                    isLoading = false
+                    isLoading = false,
+                    ratings = items.associate { item -> item.id to 5 },
+                    reviewTexts = items.associate { item -> item.id to "" }
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -104,5 +103,17 @@ class ReviewViewModel : ViewModel() {
 
     fun resetState() {
         _uiState.value = ReviewState()
+    }
+
+    fun checkReviewedItems(orderId: String): StateFlow<List<String>> {
+        val result = MutableStateFlow<List<String>>(emptyList())
+        val userId = auth.currentUser?.uid ?: return result
+        db.collection("reviews")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("orderId", orderId)
+            .addSnapshotListener { snapshot, _ ->
+                result.value = snapshot?.documents?.mapNotNull { it.getString("foodId") } ?: emptyList()
+            }
+        return result
     }
 }

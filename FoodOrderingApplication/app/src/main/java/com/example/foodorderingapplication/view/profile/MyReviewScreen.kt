@@ -17,13 +17,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.ReviewItem
@@ -49,8 +59,19 @@ fun MyReviewScreen(
     viewModel: MyReviewViewModel = viewModel()
 ) {
     val reviews by viewModel.reviews.collectAsState()
+    val currentBackStackEntry = navController.currentBackStackEntryAsState().value
+    val savedStateHandle = currentBackStackEntry?.savedStateHandle
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    LaunchedEffect(savedStateHandle?.get<Boolean>("shouldRefresh")) {
+        val shouldRefresh = savedStateHandle?.get<Boolean>("shouldRefresh") ?: false
+        if (shouldRefresh) {
+            viewModel.fetchReviews()
+            savedStateHandle.remove<Boolean>("shouldRefresh")
+        }
+    }
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.White)) {
         HeaderSection("My Reviews") {
             navController.popBackStack()
         }
@@ -77,8 +98,12 @@ fun MyReviewScreen(
                         description = review.description,
                         averageRating = review.rating.toFloat() // Giả sử rating trung bình bằng rating cá nhân
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ReviewItem(reviewItem = review)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ReviewItem(
+                        reviewItem = review,
+                        onEdit = { navController.navigate("edit_review/${review.reviewId}") },
+                        onDelete = { viewModel.deleteReview(review.reviewId) }
+                    )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                 }
             }
@@ -93,7 +118,9 @@ fun HeaderReviewSection(
     description: String,
     averageRating: Float
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 8.dp)) {
         // Image + Title
         AsyncImage(
             model = imageUrl,
@@ -148,11 +175,44 @@ fun HeaderReviewSection(
 }
 
 @Composable
-fun ReviewItem(reviewItem: ReviewItem) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text("My Rating", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+fun ReviewItem(
+    reviewItem: ReviewItem, onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Confirm Delete") },
+            text = { Text("Are you sure you want to delete this review?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete()
+                    showDeleteDialog = false
+                }) { Text("Yes") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("No") }
+            }
+        )
+    }
 
-        Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("My Rating", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFFFFD700))
+                }
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
+                }
+            }
+        }
 
         Row {
             repeat(5) { index ->

@@ -12,66 +12,93 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.viewmodel.ReviewListViewModel
+import androidx.compose.runtime.getValue
+import com.example.foodorderingapplication.model.FoodItem
+import java.text.NumberFormat
+import java.util.Locale
+
 
 @Composable
-fun ReviewListScreen(navController: NavController) {
-    val foodList = listOf(
-        FoodReviewItem(
-            imageUrl = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fdamndelicious.net%2F2019%2F04%2F21%2Fkorean-beef-bulgogi%2F&psig=AOvVaw1JXLg6RcJOEF0bQbIgcQZj&ust=1744340751413000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLjMju-9zIwDFQAAAAAdAAAAABAE",
-            title = "Bulgogi Beef",
-            description = "Thinly sliced beef marinated in a sauce...",
-            price = "$7.99",
-            reviewCount = 5
-        ),
-        FoodReviewItem(
-            imageUrl = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fdamndelicious.net%2F2019%2F04%2F21%2Fkorean-beef-bulgogi%2F&psig=AOvVaw1JXLg6RcJOEF0bQbIgcQZj&ust=1744340751413000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLjMju-9zIwDFQAAAAAdAAAAABAEhttps://www.google.com/url?sa=i&url=https%3A%2F%2Fdamndelicious.net%2F2019%2F04%2F21%2Fkorean-beef-bulgogi%2F&psig=AOvVaw1JXLg6RcJOEF0bQbIgcQZj&ust=1744340751413000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLjMju-9zIwDFQAAAAAdAAAAABAEhttps://www.google.com/url?sa=i&url=https%3A%2F%2Fdamndelicious.net%2F2019%2F04%2F21%2Fkorean-beef-bulgogi%2F&psig=AOvVaw1JXLg6RcJOEF0bQbIgcQZj&ust=1744340751413000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLjMju-9zIwDFQAAAAAdAAAAABAE",
-            title = "Bibimbap",
-            description = "A bowl of white rice topped with vegetable,...",
-            price = "$7.99",
-            reviewCount = 1
-        )
-    )
+fun ReviewListScreen(
+    navController: NavController,
+    viewModel: ReviewListViewModel = viewModel()
+) {
+    val foodItems by viewModel.foodItems.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Header
-        HeaderSection("Reviews"){
+    Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+        HeaderSection("Reviews") {
             navController.popBackStack()
         }
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(foodList) { item ->
-                FoodReviewItemCard(item){
-                    navController.navigate("review/1")
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .wrapContentSize(Alignment.Center)
+            )
+        } else if (foodItems.isEmpty()) {
+            Text(
+                text = "No foods available",
+                color = Color.Gray,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .wrapContentSize(Alignment.Center)
+            )
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(foodItems) { item ->
+                    FoodReviewItemCard(
+                        item = item,
+                        onClick = { navController.navigate("review/${item.id}") }
+                    )
+                    HorizontalDivider()
                 }
-                HorizontalDivider()
             }
         }
     }
 }
 
 @Composable
-fun FoodReviewItemCard(item: FoodReviewItem, onClick: () -> Unit = {}) {
+fun FoodReviewItemCard(item: FoodItem, onClick: () -> Unit = {}) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -81,35 +108,48 @@ fun FoodReviewItemCard(item: FoodReviewItem, onClick: () -> Unit = {}) {
     ) {
         AsyncImage(
             model = item.imageUrl,
-            contentDescription = item.title,
+            contentDescription = item.name,
             modifier = Modifier
                 .size(84.dp)
                 .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(id = R.drawable.placeholder)
         )
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(item.title, fontWeight = FontWeight.Bold)
+            Text(item.name, fontWeight = FontWeight.Bold)
             Text(item.description, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                text = item.price,
+                text = NumberFormat.getCurrencyInstance(Locale.US).format(item.price),
                 color = Color.Red,
                 fontWeight = FontWeight.SemiBold
             )
+            Row {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Rating",
+                    tint = Color(0xFFFFD700),
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = String.format("%.1f", item.rating),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
         }
 
         Box(
             modifier = Modifier
                 .background(Color(0xFFFFD700), shape = RoundedCornerShape(8.dp))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
-                .align(Alignment.CenterVertically)
                 .size(80.dp, 30.dp)
-                .clickable {onClick }
+                .clickable { onClick() }
         ) {
             Text(
-                text = "${item.reviewCount} review${if (item.reviewCount > 1) "s" else ""}",
+                text = "${item.reviewCount} review${if (item.reviewCount != 1) "s" else ""}",
                 color = Color.Red,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 16.sp,
@@ -118,12 +158,3 @@ fun FoodReviewItemCard(item: FoodReviewItem, onClick: () -> Unit = {}) {
         }
     }
 }
-
-data class FoodReviewItem(
-    val imageUrl: String,
-    val title: String,
-    val description: String,
-    val price: String,
-    val reviewCount: Int
-)
-
