@@ -133,7 +133,7 @@ fun EditFoodScreen(navController: NavController, foodId: String) {
             )
 
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+//                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Box {

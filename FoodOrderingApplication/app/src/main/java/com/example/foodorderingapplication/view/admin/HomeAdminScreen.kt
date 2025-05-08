@@ -84,7 +84,6 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
     Scaffold(
         bottomBar = { BottomNavBar(navController, bottomNavItems) }
     ) { paddingValues ->
-        // SỬA Ở ĐÂY: Áp dụng Modifier.padding(paddingValues) trực tiếp cho LazyColumn
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,7 +92,7 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues) // Đặt ở đây, không bọc bên ngoài Box
+                    .padding(paddingValues)
                     .background(Color.White)
             ) {
                 item { TopBar() }
@@ -109,10 +108,8 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
                 }
             }
 
-            // DraggableAddIcon nằm trong Box này sẽ được hiển thị đúng
             DraggableAddIcon(navController = navController)
 
-            // AlertDialog vẫn giữ nguyên
             if (showDeleteDialog && selectedFoodItemToDelete != null) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },

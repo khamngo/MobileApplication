@@ -43,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -167,7 +168,7 @@ fun RevenueScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                var selectedTab by remember { mutableStateOf(0) }
+                var selectedTab by remember { mutableIntStateOf(0) }
                 val tabs = listOf("Daily", "Hourly", "Status")
 
                 TabRow(

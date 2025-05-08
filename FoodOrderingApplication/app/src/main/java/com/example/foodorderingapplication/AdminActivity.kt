@@ -21,6 +21,8 @@ import com.example.foodorderingapplication.view.admin.ProfileAdminScreen
 import com.example.foodorderingapplication.view.admin.RevenueScreen
 import com.example.foodorderingapplication.view.admin.ReviewDetailScreen
 import com.example.foodorderingapplication.view.admin.ReviewListScreen
+import com.example.foodorderingapplication.view.admin.UserManagementScreen
+import com.example.foodorderingapplication.view.home.SignInScreen
 
 class AdminActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +63,8 @@ fun NavigationGraphAdmin() {
         }
         composable("new_account") { CreateNewAccountScreen(navController = navController) }
         composable("admin_account") { AdminAccountScreen(navController = navController) }
+        composable("user_management") { UserManagementScreen(navController = navController) }
+
     }
 }
 

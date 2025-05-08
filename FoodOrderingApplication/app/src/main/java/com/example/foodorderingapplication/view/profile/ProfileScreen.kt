@@ -2,6 +2,7 @@ package com.example.foodorderingapplication.view.profile
 
 import android.app.Activity
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +77,10 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
         SettingOption(Icons.Default.AddCard, "Payment Method", "payment_method"),
     )
 
+    LaunchedEffect(Unit) {
+        viewModel.loadUserData()
+    }
+
     Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
         Column(
             modifier = Modifier
@@ -102,7 +108,6 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
 
             Spacer(modifier = Modifier.weight(1f))
             var showLogoutDialog by remember { mutableStateOf(false) }
-            val context = LocalContext.current
             if (showLogoutDialog) {
                 AlertDialog(
                     onDismissRequest = { showLogoutDialog = false },
@@ -155,8 +160,8 @@ fun ProfileHeaderSection(userName: String, location: String, avatarUrl: String) 
             model = ImageRequest.Builder(LocalContext.current)
                 .data(avatarUrl)
                 .crossfade(true)
-                .placeholder(R.drawable.ic_placeholder_avatar) // ảnh mặc định khi loading
-                .error(R.drawable.ic_placeholder_avatar)       // ảnh khi lỗi hoặc null
+                .placeholder(R.drawable.ic_placeholder_avatar)
+                .error(R.drawable.ic_placeholder_avatar)
                 .build(),
             contentDescription = "Avatar",
             contentScale = ContentScale.Crop,

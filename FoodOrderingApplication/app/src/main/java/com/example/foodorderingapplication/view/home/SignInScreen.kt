@@ -77,11 +77,8 @@ fun SignInScreen(navController: NavController, authViewModel: AuthViewModel = vi
     val signInSuccess by authViewModel.signInSuccess.collectAsState()
     val errorMessage by authViewModel.errorMessage.collectAsState()
     val userRole by authViewModel.userRole.collectAsState()
-    val username by authViewModel.username.collectAsState()
     val email by authViewModel.email.collectAsState()
-    val phone by authViewModel.phone.collectAsState()
     val password by authViewModel.password.collectAsState()
-    val confirmPassword by authViewModel.confirmPassword.collectAsState()
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     val isLoading by authViewModel.isLoading.collectAsState()
 
@@ -99,25 +96,19 @@ fun SignInScreen(navController: NavController, authViewModel: AuthViewModel = vi
         }
     }
 
-    // Xử lý chuyển hướng dựa trên vai trò
     LaunchedEffect(signInSuccess, userRole) {
         if (signInSuccess) {
             when (userRole) {
                 "admin" -> {
-                    // Khởi động AdminActivity
                     val intent = Intent(context, AdminActivity::class.java)
                     context.startActivity(intent)
-                    activity?.finish() // Đóng LoginScreen
+                    activity?.finish()
                 }
                 "user" -> {
-                    // Điều hướng đến home
                     navController.navigate(BottomNavItem.Home.route) {
                         popUpTo(navController.graph.startDestinationId)
                         launchSingleTop = true
                     }
-                }
-                else -> {
-                    // Vai trò chưa được tải, có thể hiển thị loading
                 }
             }
         }

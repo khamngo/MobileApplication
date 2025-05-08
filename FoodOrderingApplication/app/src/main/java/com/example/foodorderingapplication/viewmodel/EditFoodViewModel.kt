@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FoodItem
@@ -61,7 +62,7 @@ class EditFoodViewModel : ViewModel() {
         }
     }
 
-    fun uploadImageToFirebase(uri: android.net.Uri) {
+    fun uploadImageToFirebase(uri: Uri) {
         viewModelScope.launch {
             _isLoading.value = true
             try {

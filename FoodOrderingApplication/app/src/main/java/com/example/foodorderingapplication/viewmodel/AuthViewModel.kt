@@ -5,8 +5,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.UserItem
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
@@ -80,18 +83,23 @@ class AuthViewModel : ViewModel() {
         _isLoading.value = true
 
         viewModelScope.launch {
-            auth.signInWithEmailAndPassword(emailValue, passwordValue)
-                .addOnCompleteListener { task ->
-                    _isLoading.value = false
-                    if (task.isSuccessful) {
-                        onSuccess()
-                    } else {
-                        _errorMessage.value = task.exception?.message ?: "Login failed"
-                    }
-                }
+            try {
+                val authResult = auth.signInWithEmailAndPassword(emailValue, passwordValue).await()
+                val user = authResult.user ?: throw Exception("User not found")
 
-            _errorMessage.value = ""
-            _signUpSuccess.value = true
+                // Lấy role từ Firestore
+                val userProfile = getOrCreateUserProfile(user.uid, user.email, user.displayName)
+                _userRole.value = userProfile.role
+
+                _errorMessage.value = ""
+                _signUpSuccess.value = true
+                _signInSuccess.value = true
+                onSuccess()
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _errorMessage.value = e.message ?: "Login failed"
+                _signInSuccess.value = false
+            }
         }
     }
 
@@ -122,7 +130,7 @@ class AuthViewModel : ViewModel() {
                 val firebaseUser = authResult.user ?: throw Exception("User creation failed")
 
                 // Cập nhật displayName cho FirebaseUser
-                val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                val profileUpdates = UserProfileChangeRequest.Builder()
                     .setDisplayName(username)
                     .build()
                 firebaseUser.updateProfile(profileUpdates).await()
@@ -134,6 +142,7 @@ class AuthViewModel : ViewModel() {
                     "email" to email,
                     "phone" to phone,
                     "role" to "user",
+                    "provider" to "password",
                     "createdAt" to FieldValue.serverTimestamp()
                 )
 
@@ -153,7 +162,6 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
-
 
     fun resetSignUpState() {
         _signUpSuccess.value = false
@@ -197,41 +205,46 @@ class AuthViewModel : ViewModel() {
         confirmPassword: String,
         role: String
     ) {
+        // Reset lỗi trước đó
+        _errorMessage.value = ""
+
+        // Kiểm tra đầu vào
+        if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+            _errorMessage.value = "Please fill in all required fields"
+            return
+        }
+
+        if (password != confirmPassword) {
+            _errorMessage.value = "Confirm Password does not match"
+            return
+        }
+
         viewModelScope.launch {
             try {
-                // Validate input
-                when {
-                    username.isBlank() -> throw IllegalArgumentException("Username cannot be empty")
-                    email.isBlank() -> throw IllegalArgumentException("Email cannot be empty")
-                    phone.isBlank() -> throw IllegalArgumentException("Phone cannot be empty")
-                    !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> throw IllegalArgumentException("Invalid email format")
-                    password.isBlank() -> throw IllegalArgumentException("Password cannot be empty")
-                    password.length < 6 -> throw IllegalArgumentException("Password must be at least 6 characters")
-                    confirmPassword != password -> throw IllegalArgumentException("Confirm Password does not match")
-                    role !in listOf("user", "admin") -> throw IllegalArgumentException("Invalid role")
-                }
+                // Tạo tài khoản với email và password
+                val result = auth.createUserWithEmailAndPassword(email, password).await()
+                val uid = result.user?.uid ?: throw Exception("Failed to get user ID")
 
-                // Tạo tài khoản bằng Firebase Authentication
-                val authResult = auth.createUserWithEmailAndPassword(email, password).await()
-                val userId = authResult.user?.uid ?: throw Exception("User creation failed")
-
-                // Lưu profile vào Firestore
-                val profile = UserItem(
+                // Lưu thông tin người dùng vào Firestore
+                val newUser = UserItem(
+                    uid = uid,
                     username = username,
-                    phone = phone,
                     email = email,
-                    role = role
+                    phone = phone,
+                    role = role,
+                    provider = "password",
+                    createdAt = Timestamp.now()
                 )
-                db.collection("users").document(userId)
-                    .collection("profile").document("info")
-                    .set(profile)
-                    .await()
 
+                db.collection("users").document(uid)
+                    .collection("profile").document("info")
+                    .set(newUser)
+                    .await()
                 _createAccountSuccess.value = true
-                _errorMessage.value = ""
+            } catch (e: FirebaseAuthUserCollisionException) {
+                _errorMessage.value = "This email is already in use"
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error creating account"
-                _createAccountSuccess.value = false
+                _errorMessage.value = e.localizedMessage ?: "Account creation failed"
             }
         }
     }
@@ -273,7 +286,10 @@ class AuthViewModel : ViewModel() {
             val newProfile = UserItem(
                 role = "user",
                 email = email ?: "",
-                username = displayName ?: ""
+                username = displayName ?: "",
+                provider = "google",
+                uid = userId,
+                createdAt = Timestamp.now()
             )
             profileRef.set(newProfile).await()
             newProfile
@@ -285,5 +301,9 @@ class AuthViewModel : ViewModel() {
         _signInSuccess.value = false
         _errorMessage.value = ""
         _userRole.value = null
+    }
+
+    fun logout() {
+        auth.signOut()
     }
 }

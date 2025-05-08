@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.home
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -63,10 +65,12 @@ fun SignUpScreen(
     val errorMessage by authViewModel.errorMessage.collectAsState()
     val isLoading by authViewModel.isLoading.collectAsState()
 
-    // Xử lý điều hướng khi đăng ký thành công
+    val context = LocalContext.current
+
     LaunchedEffect(signUpSuccess) {
         if (signUpSuccess) {
-            onSignInClick() // Điều hướng về SignInScreen
+            Toast.makeText(context, "Sign up successful!", Toast.LENGTH_SHORT).show()
+            onSignInClick()
             authViewModel.resetSignUpState()
         }
     }

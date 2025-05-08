@@ -1,5 +1,8 @@
 package com.example.foodorderingapplication.view.admin
 
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,10 +45,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.foodorderingapplication.MainActivity
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.AuthViewModel
+import kotlinx.coroutines.delay
 
+@SuppressLint("ContextCastToActivity")
 @Composable
 fun CreateNewAccountScreen(
     navController: NavController,
@@ -56,41 +62,55 @@ fun CreateNewAccountScreen(
     var phone by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
-    var selectedRole by rememberSaveable { mutableStateOf("user") } // Mặc định là user
+    var selectedRole by rememberSaveable { mutableStateOf("user") }
 
     val createAccountSuccess by authViewModel.createAccountSuccess.collectAsState()
     val errorMessage by authViewModel.errorMessage.collectAsState()
-    val showDialog = remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    // Xử lý điều hướng với xác nhận
+    val showDialog = remember { mutableStateOf(false) }
+    val showToast = remember { mutableStateOf(false) }
+    val activity = LocalContext.current as? Activity
+
     LaunchedEffect(createAccountSuccess) {
         if (createAccountSuccess) {
-            showDialog.value = true
+            showToast.value = true
         }
     }
 
-    // Hiển thị hộp thoại xác nhận
+    if (showToast.value) {
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Create account successful", Toast.LENGTH_SHORT).show()
+            delay(1000)
+            showDialog.value = true
+            showToast.value = false
+        }
+    }
+
     if (showDialog.value) {
         AlertDialog(
             onDismissRequest = {
                 showDialog.value = false
             },
-            title = { Text(text = "Xác nhận") },
-            text = { Text("Bạn có chắc chắn muốn chuyển đến trang đăng nhập?") },
+            title = { Text(text = "Confirm") },
+            text = { Text("Do you want to go to the login page?") },
             confirmButton = {
                 Button(
                     onClick = {
-                        // Điều hướng đến trang đăng nhập
-                        navController.navigate("login") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
+                        authViewModel.logout()
+
+                        activity?.let {
+                            val intent = Intent(it, MainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            it.startActivity(intent)
+                            it.finish()
                         }
+
                         authViewModel.resetCreateAccountState()
                         showDialog.value = false
                     }
                 ) {
-                    Text("Đồng ý")
+                    Text("Agree")
                 }
             },
             dismissButton = {
@@ -99,13 +119,12 @@ fun CreateNewAccountScreen(
                         showDialog.value = false
                     }
                 ) {
-                    Text("Hủy")
+                    Text("Cancel")
                 }
             }
         )
     }
 
-    // Hiển thị lỗi
     if (errorMessage.isNotEmpty()) {
         LaunchedEffect(errorMessage) {
             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
@@ -167,7 +186,6 @@ fun CreateNewAccountScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Chọn vai trò
             Text("Role", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Row(
                 modifier = Modifier.fillMaxWidth(),

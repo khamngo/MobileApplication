@@ -1,7 +1,14 @@
 package com.example.foodorderingapplication.view.profile
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,9 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -37,8 +48,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -46,6 +61,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
 
@@ -58,12 +76,18 @@ fun MyAccountScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            viewModel.uploadAvatarImage(uri, context)
+        }
+    }
 
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var currentPassword by rememberSaveable { mutableStateOf("") }
 
-    // Hiển thị Toast cho thông báo
+    val isGoogleSignIn = userState.provider == "google"
+
     LaunchedEffect(errorMessage) {
         if (errorMessage.isNotEmpty()) {
             Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
@@ -74,7 +98,7 @@ fun MyAccountScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         HeaderSection("My Account") {
             navController.popBackStack()
         }
@@ -82,10 +106,47 @@ fun MyAccountScreen(
         Column(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Box(
+                contentAlignment = Alignment.BottomEnd,
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(userState.avatarUrl)
+                        .crossfade(true)
+                        .placeholder(R.drawable.ic_placeholder_avatar)
+                        .error(R.drawable.ic_placeholder_avatar)
+                        .build(),
+                    contentDescription = "Avatar",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, Color.Gray, CircleShape)
+                )
+
+                IconButton(
+                    onClick = { launcher.launch("image/*") },
+                    modifier = Modifier
+                        .size(24.dp)
+                ){
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = "Change Avatar",
+                        tint = Color.Black,
+                    )
+                }
+            }
+
+            Text(
+                text = if (isGoogleSignIn) "Signed in with Google" else "Signed in with Email",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+
             CustomTextField(
                 value = userState.username,
                 onValueChange = { viewModel.updateUsername(it) },
@@ -95,13 +156,11 @@ fun MyAccountScreen(
 
             CustomTextField(
                 value = userState.email,
-                onValueChange = {}, // Không cần xử lý thay đổi
+                onValueChange = {},
                 label = "Email",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                enabled = false,
-                isError = false // Không kiểm tra lỗi nếu không cho chỉnh sửa
+                enabled = false
             )
-
 
             CustomTextField(
                 value = userState.phone ?: "",
@@ -111,26 +170,28 @@ fun MyAccountScreen(
                 isError = errorMessage.contains("Phone")
             )
 
-            PasswordField(
-                label = "Current Password",
-                password = currentPassword,
-                onPasswordChange = { currentPassword = it },
-                isError = errorMessage.contains("reauthenticate")
-            )
+            if (!isGoogleSignIn) {
+                PasswordField(
+                    label = "Current Password",
+                    password = currentPassword,
+                    onPasswordChange = { currentPassword = it },
+                    isError = errorMessage.contains("reauthenticate")
+                )
 
-            PasswordField(
-                label = "New Password (optional)",
-                password = password,
-                onPasswordChange = { password = it },
-                isError = errorMessage.contains("Password")
-            )
+                PasswordField(
+                    label = "New Password (optional)",
+                    password = password,
+                    onPasswordChange = { password = it },
+                    isError = errorMessage.contains("Password")
+                )
 
-            PasswordField(
-                label = "Confirm New Password",
-                password = confirmPassword,
-                onPasswordChange = { confirmPassword = it },
-                isError = errorMessage.contains("Confirm Password")
-            )
+                PasswordField(
+                    label = "Confirm New Password",
+                    password = confirmPassword,
+                    onPasswordChange = { confirmPassword = it },
+                    isError = errorMessage.contains("Confirm Password")
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -141,16 +202,12 @@ fun MyAccountScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
                     .height(52.dp),
                 shape = RoundedCornerShape(10.dp),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
                     Text("Update", fontSize = 16.sp, color = Color.White)
                 }
