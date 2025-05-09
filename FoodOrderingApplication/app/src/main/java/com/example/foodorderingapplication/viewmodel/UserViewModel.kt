@@ -2,73 +2,101 @@ package com.example.foodorderingapplication.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.UserItem
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class UserViewModel : ViewModel() {
-    private val firestore = FirebaseFirestore.getInstance()
+    private val db = FirebaseFirestore.getInstance()
+
     private val _userList = MutableStateFlow<List<UserItem>>(emptyList())
-    val userList: StateFlow<List<UserItem>> = _userList
+    val userList: StateFlow<List<UserItem>> = _userList.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow("")
+    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
 
     init {
         fetchUsers()
     }
 
     fun fetchUsers() {
-        firestore.collection("users")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val users = snapshot.documents.map { doc ->
-                    val profileRef = doc.reference.collection("profile").document("info")
-                    profileRef.get().addOnSuccessListener { profileSnap ->
-                        val profileData = profileSnap.data
-                        val user = UserItem(
-                            uid = doc.id,
-                            email = doc.getString("email") ?: "",
-                            username = profileData?.get("username") as? String ?: "",
-                            phone = profileData?.get("phone") as? String,
-                            role = (profileData?.get("role") as? String).toString(),
-                            avatarUrl = doc.getString("avatarUrl")
-                        )
-                        _userList.value = _userList.value.toMutableList().apply {
-                            removeAll { it.uid == user.uid }
-                            add(user)
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Lấy danh sách tất cả user IDs từ collection "users"
+                val userDocs = db.collection("users").get().await()
+                if (userDocs.isEmpty) {
+                    _errorMessage.value = "No users found in Firestore"
+                    _userList.value = emptyList()
+                    return@launch
+                }
+
+                val users = mutableListOf<UserItem>()
+                for (doc in userDocs.documents) {
+                    val userId = doc.id
+                    val profileDoc = db.collection("users")
+                        .document(userId)
+                        .collection("profile")
+                        .document("info")
+                        .get()
+                        .await()
+
+                    if (profileDoc.exists()) {
+                        val user = profileDoc.toObject(UserItem::class.java)?.copy(uid = userId)
+                        if (user != null) {
+                            users.add(user)
                         }
                     }
                 }
+
+                if (users.isEmpty()) {
+                    _errorMessage.value = "No user profiles found in Firestore"
+                } else {
+                    _errorMessage.value = ""
+                }
+                _userList.value = users
+            } catch (e: Exception) {
+                _errorMessage.value = when (e) {
+                    is com.google.firebase.auth.FirebaseAuthException -> "Authentication error: ${e.message}"
+                    is com.google.firebase.firestore.FirebaseFirestoreException -> "Firestore error: ${e.message}"
+                    else -> e.message ?: "Error fetching users"
+                }
+            } finally {
+                _isLoading.value = false
             }
+        }
     }
 
     fun updateUser(user: UserItem) {
-        // Cập nhật dữ liệu người dùng trong "profile/info"
-        val profileData = mapOf(
-            "username" to user.username,
-            "phone" to user.phone,
-            "role" to user.role
-        )
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                db.collection("users")
+                    .document(user.uid)
+                    .collection("profile")
+                    .document("info")
+                    .set(user)
+                    .await()
 
-        firestore.collection("users")
-            .document(user.uid)
-            .collection("profile")
-            .document("info")
-            .set(profileData, SetOptions.merge())
-            .addOnSuccessListener {
-                fetchUsers() // refresh lại danh sách sau khi update
+                fetchUsers() // Refresh danh sách sau khi cập nhật
+                _errorMessage.value = "User updated successfully"
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error updating user"
+            } finally {
+                _isLoading.value = false
             }
-    }
-
-    fun deleteUser(uid: String) {
-        firestore.collection("users")
-            .document(uid)
-            .delete()
-            .addOnSuccessListener {
-                _userList.value = _userList.value.filter { it.uid != uid }
-            }
-            .addOnFailureListener {
-                Log.e("UserViewModel", "Error deleting user: ${it.message}")
-            }
+        }
     }
 }

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -105,23 +106,27 @@ fun RevenueScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    Column(
+    // Sử dụng LazyColumn làm container chính để hỗ trợ cuộn
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        HeaderSection("Revenue") {
-            navController.popBackStack()
+        item {
+            HeaderSection("Revenue") {
+                navController.popBackStack()
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
-        Spacer(modifier = Modifier.height(8.dp))
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
+        item {
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             } else if (errorMessage.isNotEmpty()) {
@@ -129,73 +134,80 @@ fun RevenueScreen(
                     text = errorMessage,
                     color = Color.Red,
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .padding(16.dp)
                         .wrapContentSize(Alignment.Center)
                 )
             } else {
-                Text("Revenue Statistics", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                RevenueSummary(totalOrders, totalRevenue, bestSelling)
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                RevenueDateRange(
-                    startDate = startDate,
-                    endDate = endDate,
-                    onStartChange = { startDate = it },
-                    onEndChange = { endDate = it }
-                )
-
-                if (dateError.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = dateError,
-                        color = Color.Red,
-                        fontSize = 14.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                StatusFilter(
-                    statuses = availableStatuses,
-                    selectedStatus = selectedStatus,
-                    onStatusSelected = { status ->
-                        viewModel.setSelectedStatus(if (status == "All") null else status)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                var selectedTab by remember { mutableIntStateOf(0) }
-                val tabs = listOf("Daily", "Hourly", "Status")
-
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = Color.White,
-                    contentColor = Color(0xFFFFC107)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            text = { Text(title) },
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index }
+                    Text("Revenue Statistics", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    RevenueSummary(totalOrders, totalRevenue, bestSelling)
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    RevenueDateRange(
+                        startDate = startDate,
+                        endDate = endDate,
+                        onStartChange = { startDate = it },
+                        onEndChange = { endDate = it }
+                    )
+
+                    if (dateError.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = dateError,
+                            color = Color.Red,
+                            fontSize = 14.sp
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    StatusFilter(
+                        statuses = availableStatuses,
+                        selectedStatus = selectedStatus,
+                        onStatusSelected = { status ->
+                            viewModel.setSelectedStatus(if (status == "All") null else status)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    var selectedTab by remember { mutableIntStateOf(0) }
+                    val tabs = listOf("Daily", "Hourly", "Status")
+
+                    TabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = Color.White,
+                        contentColor = Color(0xFFFFC107)
+                    ) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                text = { Text(title) },
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    when (selectedTab) {
+                        0 -> RevenueChartSection(chartData, "Daily Revenue")
+                        1 -> RevenueChartSection(hourlyChartData, "Hourly Revenue")
+                        2 -> RevenueChartSection(statusChartData, "Revenue by Status")
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    CategoryRevenueSection(categoryRevenue)
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                when (selectedTab) {
-                    0 -> RevenueChartSection(chartData, "Daily Revenue")
-                    1 -> RevenueChartSection(hourlyChartData, "Hourly Revenue")
-                    2 -> RevenueChartSection(statusChartData, "Revenue by Status")
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                CategoryRevenueSection(categoryRevenue)
             }
         }
     }
@@ -204,13 +216,15 @@ fun RevenueScreen(
 @Composable
 fun RevenueSummary(totalOrders: Int, totalRevenue: Double, bestSelling: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+           ,
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
         CardInfo(title = "Total Orders", value = "$totalOrders")
         CardInfo(title = "Best-selling", value = bestSelling)
-        CardInfo(title = "Total Revenue", value = "${DecimalFormat("#,###").format(totalRevenue)}đ")
+        CardInfo(title = "Total Revenue", value = "$${DecimalFormat("#,###").format(totalRevenue)}")
     }
 }
 
@@ -291,53 +305,58 @@ fun StatusFilter(
 
 @Composable
 fun RevenueChartSection(chartData: List<Pair<String, Double>>, title: String) {
-    Text(title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-    Spacer(modifier = Modifier.height(8.dp))
-    if (chartData.isEmpty()) {
-        Text(
-            text = "No data available",
-            color = Color.Gray,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            textAlign = TextAlign.Center
-        )
-    } else {
-        RevenueChart(data = chartData)
+    Column {
+        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        if (chartData.isEmpty()) {
+            Text(
+                text = "No data available",
+                color = Color.Gray,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                textAlign = TextAlign.Center
+            )
+        } else {
+            RevenueChart(data = chartData)
+        }
     }
 }
 
 @Composable
 fun CategoryRevenueSection(categoryRevenue: List<Pair<String, Double>>) {
-    Text("Revenue by Category", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-    Spacer(modifier = Modifier.height(8.dp))
-    if (categoryRevenue.isEmpty()) {
-        Text(
-            text = "No data available",
-            color = Color.Gray,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            textAlign = TextAlign.Center
-        )
-    } else {
-        LazyColumn {
-            items(categoryRevenue) { (category, revenue) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(category, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                    Text(
-                        "${DecimalFormat("#,###").format(revenue)}đ",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFC107)
-                    )
+    Column {
+        Text("Revenue by Category", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        if (categoryRevenue.isEmpty()) {
+            Text(
+                text = "No data available",
+                color = Color.Gray,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                textAlign = TextAlign.Center
+            )
+        } else {
+            // Không sử dụng LazyColumn bên trong, thay bằng Column để tránh xung đột cuộn
+            Column {
+                categoryRevenue.forEach { (category, revenue) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(category, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            "$${DecimalFormat("#,###").format(revenue)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFFC107)
+                        )
+                    }
+                    HorizontalDivider()
                 }
-                HorizontalDivider()
             }
         }
     }
@@ -416,7 +435,7 @@ fun RevenueChart(data: List<Pair<String, Double>>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(16.dp).horizontalScroll(rememberScrollState())
     ) {
         Column(
             modifier = Modifier
@@ -426,7 +445,7 @@ fun RevenueChart(data: List<Pair<String, Double>>) {
         ) {
             for (i in 4 downTo 0) {
                 Text(
-                    text = "${(step * i).toInt()}đ",
+                    text = "$${(step * i).toInt()}",
                     fontSize = 12.sp,
                     textAlign = TextAlign.End,
                     modifier = Modifier.fillMaxWidth()
@@ -440,7 +459,7 @@ fun RevenueChart(data: List<Pair<String, Double>>) {
             Box(
                 modifier = Modifier
                     .height(200.dp)
-                    .fillMaxWidth()
+                    .width((data.size * 70).dp)
                     .drawBehind {
                         for (i in 0..4) {
                             val y = size.height * (1 - i / 4f)

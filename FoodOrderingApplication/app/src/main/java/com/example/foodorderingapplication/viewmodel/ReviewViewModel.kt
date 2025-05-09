@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.R.attr.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FoodItem
@@ -35,8 +36,10 @@ class ReviewViewModel : ViewModel() {
                         description = foodDoc.getString("description") ?: ""
                     )
                 } ?: emptyList()
+                val orderDate = orderDoc.get("orderDate") as? Timestamp ?: Timestamp.now()
                 _uiState.value = _uiState.value.copy(
                     foodItems = items,
+                    date = orderDate,
                     isLoading = false,
                     ratings = items.associate { item -> item.id to 5 },
                     reviewTexts = items.associate { item -> item.id to "" }
@@ -70,22 +73,33 @@ class ReviewViewModel : ViewModel() {
             try {
                 val userId = auth.currentUser?.uid ?: throw IllegalStateException("User not logged in")
                 val batch = db.batch()
+                var hasValidReview = false
+
                 _uiState.value.foodItems.forEach { foodItem ->
                     val rating = _uiState.value.ratings[foodItem.id] ?: 0
                     val reviewText = _uiState.value.reviewTexts[foodItem.id] ?: ""
-                    if (rating > 0 && reviewText.isNotBlank()) {
+                    if (rating > 0) { // Chỉ cần rating > 0 là đủ
+                        hasValidReview = true
                         val reviewId = db.collection("reviews").document().id
                         val reviewData = mapOf(
                             "userId" to userId,
                             "foodId" to foodItem.id,
                             "orderId" to orderId,
                             "rating" to rating,
-                            "reviewText" to reviewText,
-                            "timestamp" to Timestamp.now()
+                            "reviewText" to reviewText, // Lưu reviewText, có thể trống
+                            "timestamp" to (_uiState.value.date ?: Timestamp.now()), // Sử dụng date từ đơn hàng
+                            "foodName" to foodItem.name,
+                            "imageUrl" to foodItem.imageUrl,
+                            "description" to foodItem.description
                         )
                         batch.set(db.collection("reviews").document(reviewId), reviewData)
                     }
                 }
+
+                if (!hasValidReview) {
+                    throw IllegalStateException("Please select a rating for at least one item")
+                }
+
                 batch.commit().await()
                 _uiState.value = _uiState.value.copy(
                     submitSuccess = true,
@@ -95,7 +109,7 @@ class ReviewViewModel : ViewModel() {
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     showError = true,
-                    isLoading = false
+                    isLoading = false,
                 )
             }
         }
@@ -103,17 +117,5 @@ class ReviewViewModel : ViewModel() {
 
     fun resetState() {
         _uiState.value = ReviewState()
-    }
-
-    fun checkReviewedItems(orderId: String): StateFlow<List<String>> {
-        val result = MutableStateFlow<List<String>>(emptyList())
-        val userId = auth.currentUser?.uid ?: return result
-        db.collection("reviews")
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("orderId", orderId)
-            .addSnapshotListener { snapshot, _ ->
-                result.value = snapshot?.documents?.mapNotNull { it.getString("foodId") } ?: emptyList()
-            }
-        return result
     }
 }

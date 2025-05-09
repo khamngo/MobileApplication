@@ -168,7 +168,7 @@ class AuthViewModel : ViewModel() {
         _errorMessage.value = ""
     }
 
-    private fun checkUserAndRole() {
+    internal fun checkUserAndRole() {
         val currentUser = auth.currentUser
 
         viewModelScope.launch {
@@ -183,8 +183,9 @@ class AuthViewModel : ViewModel() {
                         .await()
 
                     val role = snapshot.getString("role")
+                    _userRole.value = role
                     when (role) {
-                        "admin" -> _navigateTo.value = "admin_home"
+                        "admin" -> _navigateTo.value = "user_home"
                         "user" -> _navigateTo.value = "user_home"
                         else -> _navigateTo.value = "login"
                     }

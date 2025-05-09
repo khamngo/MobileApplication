@@ -64,8 +64,11 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.view.admin.CustomTextField
 import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
+import com.google.firebase.auth.GoogleAuthProvider
 
 @Composable
 fun MyAccountScreen(
@@ -76,6 +79,17 @@ fun MyAccountScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
+
+    // Kiểm tra quyền
+    val requestStoragePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(context, "Storage permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Launcher để chọn ảnh từ thư viện
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             viewModel.uploadAvatarImage(uri, context)
@@ -86,118 +100,156 @@ fun MyAccountScreen(
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var currentPassword by rememberSaveable { mutableStateOf("") }
 
-    val isGoogleSignIn = userState.provider == "google"
+    var isEditing by rememberSaveable { mutableStateOf(false) }
+    val isGoogleSignIn = userState.provider == GoogleAuthProvider.PROVIDER_ID
 
     LaunchedEffect(errorMessage) {
         if (errorMessage.isNotEmpty()) {
             Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
             if (errorMessage == "Profile updated successfully") {
-                navController.popBackStack()
+                isEditing = false // Thoát chế độ chỉnh sửa sau khi cập nhật thành công
             }
             viewModel.clearErrorMessage()
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        HeaderSection("My Account") {
-            navController.popBackStack()
-        }
-
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 80.dp)
         ) {
-            Box(
-                contentAlignment = Alignment.BottomEnd,
+            HeaderSection("My Account") {
+                navController.popBackStack()
+            }
+
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(userState.avatarUrl)
-                        .crossfade(true)
-                        .placeholder(R.drawable.ic_placeholder_avatar)
-                        .error(R.drawable.ic_placeholder_avatar)
-                        .build(),
-                    contentDescription = "Avatar",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .border(2.dp, Color.Gray, CircleShape)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .border(2.dp, Color.Gray, CircleShape)
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(userState.avatarUrl)
+                                    .crossfade(true)
+                                    .placeholder(R.drawable.ic_placeholder_avatar)
+                                    .error(R.drawable.ic_placeholder_avatar)
+                                    .build(),
+                                contentDescription = "Avatar",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.matchParentSize()
+                            )
+                        }
+                        if (isEditing) {
+                            IconButton(
+                                onClick = {
+                                    requestStoragePermissionLauncher.launch(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                                    launcher.launch("image/*")
+                                },
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .align(Alignment.BottomEnd)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CameraAlt,
+                                    contentDescription = "Change Avatar",
+                                    tint = Color.Black,
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = userState.username,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        fontFamily = MograFont
+                    )
+                }
+
+                Text(
+                    text = if (isGoogleSignIn) "Signed in with Google" else "Signed in with Email",
+                    fontSize = 14.sp,
+                    color = Color.Gray
                 )
 
-                IconButton(
-                    onClick = { launcher.launch("image/*") },
-                    modifier = Modifier
-                        .size(24.dp)
-                ){
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "Change Avatar",
-                        tint = Color.Black,
+                CustomTextField(
+                    value = userState.username,
+                    onValueChange = { if (isEditing) viewModel.updateUsername(it) },
+                    label = "Username",
+                    enabled = isEditing,
+                    isError = errorMessage.contains("Username")
+                )
+
+                CustomTextField(
+                    value = userState.email,
+                    onValueChange = {},
+                    label = "Email",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    enabled = false
+                )
+
+                CustomTextField(
+                    value = userState.phone ?: "",
+                    onValueChange = { if (isEditing) viewModel.updatePhone(it) },
+                    label = "Phone",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    enabled = isEditing,
+                    isError = errorMessage.contains("Phone")
+                )
+
+                if (!isGoogleSignIn && isEditing) {
+                    PasswordField(
+                        label = "Current Password",
+                        password = currentPassword,
+                        onPasswordChange = { currentPassword = it },
+                        isError = errorMessage.contains("reauthenticate")
+                    )
+
+                    PasswordField(
+                        label = "New Password (optional)",
+                        password = password,
+                        onPasswordChange = { password = it },
+                        isError = errorMessage.contains("Password")
+                    )
+
+                    PasswordField(
+                        label = "Confirm New Password",
+                        password = confirmPassword,
+                        onPasswordChange = { confirmPassword = it },
+                        isError = errorMessage.contains("Confirm Password")
                     )
                 }
             }
+        }
 
-            Text(
-                text = if (isGoogleSignIn) "Signed in with Google" else "Signed in with Email",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-
-            CustomTextField(
-                value = userState.username,
-                onValueChange = { viewModel.updateUsername(it) },
-                label = "Username",
-                isError = errorMessage.contains("Username")
-            )
-
-            CustomTextField(
-                value = userState.email,
-                onValueChange = {},
-                label = "Email",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                enabled = false
-            )
-
-            CustomTextField(
-                value = userState.phone ?: "",
-                onValueChange = { viewModel.updatePhone(it) },
-                label = "Phone",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                isError = errorMessage.contains("Phone")
-            )
-
-            if (!isGoogleSignIn) {
-                PasswordField(
-                    label = "Current Password",
-                    password = currentPassword,
-                    onPasswordChange = { currentPassword = it },
-                    isError = errorMessage.contains("reauthenticate")
-                )
-
-                PasswordField(
-                    label = "New Password (optional)",
-                    password = password,
-                    onPasswordChange = { password = it },
-                    isError = errorMessage.contains("Password")
-                )
-
-                PasswordField(
-                    label = "Confirm New Password",
-                    password = confirmPassword,
-                    onPasswordChange = { confirmPassword = it },
-                    isError = errorMessage.contains("Confirm Password")
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
+        // Button luôn ở cuối màn hình
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        ) {
             Button(
                 onClick = {
-                    viewModel.updateUserProfile(password, confirmPassword, currentPassword)
+                    if (isEditing) {
+                        viewModel.updateUserProfile(password, confirmPassword, currentPassword)
+                    } else {
+                        isEditing = true
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
                 modifier = Modifier
@@ -209,7 +261,7 @@ fun MyAccountScreen(
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Update", fontSize = 16.sp, color = Color.White)
+                    Text(if (isEditing) "Update" else "Edit", fontSize = 16.sp, color = Color.White)
                 }
             }
         }
@@ -249,17 +301,20 @@ fun PasswordField(
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
-    label = { Text(label) },
-    modifier = Modifier.fillMaxWidth(),
-    shape = RoundedCornerShape(8.dp),
-    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-    trailingIcon = {
-        val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-            Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
-        }
-    },
-    isError = isError
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        trailingIcon = {
+            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                Icon(
+                    imageVector = image,
+                    contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                )
+            }
+        },
+        isError = isError
     )
 }

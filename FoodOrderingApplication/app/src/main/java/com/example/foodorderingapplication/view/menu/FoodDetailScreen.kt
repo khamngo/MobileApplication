@@ -1,6 +1,7 @@
 package com.example.foodorderingapplication.view.menu
 
 import android.R.attr.description
+import android.R.attr.name
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -99,6 +100,25 @@ fun FoodDetailScreen(
                     description = it.description,
                     navController = navController
                 )
+
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = it.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = it.description,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+
+                    )
+                }
 
                 Column(modifier = Modifier.padding(16.dp)) {
                     PortionSelection(portionPrices, selectedPortion) { viewModel.updatePortion(it) }
@@ -201,25 +221,6 @@ fun FoodHeaderSection(
             }
         }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = name,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = description,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White
-            )
-        }
     }
 }
 

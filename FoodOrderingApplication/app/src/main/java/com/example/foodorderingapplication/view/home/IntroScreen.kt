@@ -46,25 +46,12 @@ import kotlin.jvm.java
 
 @Composable
 fun IntroScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
-    val context = LocalContext.current
     val navigateTo by authViewModel.navigateTo.collectAsState()
 
     LaunchedEffect(navigateTo) {
         navigateTo?.let { route ->
             when (route) {
-                "admin_home" -> {
-                    // Mở Activity admin
-                    val intent = Intent(context, AdminActivity::class.java)
-                    context.startActivity(intent)
-
-                    // Nếu muốn tắt IntroScreen sau khi mở AdminHome
-                    if (context is Activity) {
-                        context.finish()
-                    }
-                }
-
                 "user_home" -> {
-                    // Điều hướng bình thường cho user
                     navController.navigate(BottomNavItem.Home.route) {
                         popUpTo("intro") { inclusive = true }
                         launchSingleTop = true

@@ -54,6 +54,7 @@ class EditFoodViewModel : ViewModel() {
                 _price.value = food.price.toString()
                 _imageUrl.value = food.imageUrl
                 _tags.value = food.tags
+                _errorMessage.value = ""
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Error loading food data"
             } finally {
@@ -66,6 +67,19 @@ class EditFoodViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                // Xóa ảnh cũ nếu có
+                val oldImageUrl = _imageUrl.value
+                if (oldImageUrl.isNotBlank()) {
+                    try {
+                        val oldRef = storage.getReferenceFromUrl(oldImageUrl)
+                        oldRef.delete().await()
+                    } catch (e: Exception) {
+                        // Bỏ qua lỗi nếu không xóa được ảnh cũ
+                        _errorMessage.value = "Warning: Could not delete old image: ${e.message}"
+                    }
+                }
+
+                // Tải ảnh mới lên
                 val fileName = "food_images/${UUID.randomUUID()}.jpg"
                 val storageRef = storage.reference.child(fileName)
                 storageRef.putFile(uri).await()
@@ -84,7 +98,26 @@ class EditFoodViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val priceValue = _price.value.toDoubleOrNull() ?: 0.0
+                val priceValue = _price.value.toDoubleOrNull()
+                if (priceValue == null) {
+                    _errorMessage.value = "Invalid price format"
+                    return@launch
+                }
+
+                if (_foodName.value.isBlank()) {
+                    _errorMessage.value = "Food name cannot be empty"
+                    return@launch
+                }
+
+                if (_description.value.isBlank()) {
+                    _errorMessage.value = "Description cannot be empty"
+                    return@launch
+                }
+
+                if (_imageUrl.value.isBlank()) {
+                    _errorMessage.value = "Image URL cannot be empty"
+                    return@launch
+                }
 
                 val updatedFood = FoodItem(
                     id = foodId,

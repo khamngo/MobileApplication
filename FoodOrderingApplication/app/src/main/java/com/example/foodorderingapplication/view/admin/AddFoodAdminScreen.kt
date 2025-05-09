@@ -2,6 +2,8 @@ package com.example.foodorderingapplication.view.admin
 
 import android.content.Context
 import android.net.Uri
+import android.os.Environment
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
@@ -43,10 +46,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -64,17 +69,40 @@ fun AddFoodScreen(navController: NavController) {
     val viewModel: AddFoodViewModel = viewModel()
     val context = LocalContext.current
 
+    // Kiểm tra quyền
+    val requestCameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val requestStoragePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(context, "Storage permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // Launcher để chọn ảnh từ thư viện
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { viewModel.uploadImageToFirebase(it) }
+        uri?.let {
+            viewModel.uploadImageToFirebase(it)
+        }
     }
 
     // Uri tạm để lưu ảnh chụp
     var photoUri by remember { mutableStateOf<Uri?>(null) }
     LaunchedEffect(Unit) {
-        photoUri = createImageFile(context)
+        try {
+            photoUri = createImageFile(context)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Failed to create image file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // Launcher để chụp ảnh
@@ -83,6 +111,8 @@ fun AddFoodScreen(navController: NavController) {
     ) { success ->
         if (success) {
             photoUri?.let { viewModel.uploadImageToFirebase(it) }
+        } else {
+            Toast.makeText(context, "Failed to capture image", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -94,6 +124,12 @@ fun AddFoodScreen(navController: NavController) {
     val tags by viewModel.tags.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(errorMessage) {
+        if (errorMessage.isNotEmpty()) {
+            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -125,7 +161,8 @@ fun AddFoodScreen(navController: NavController) {
             CustomTextField(
                 value = price,
                 onValueChange = { viewModel.updateField("price", it) },
-                label = "Price"
+                label = "Price",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
             Column(
@@ -141,7 +178,10 @@ fun AddFoodScreen(navController: NavController) {
 
                     Row(modifier = Modifier.align(Alignment.TopEnd)) {
                         IconButton(
-                            onClick = { pickImageLauncher.launch("image/*") },
+                            onClick = {
+                                requestStoragePermissionLauncher.launch(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                                pickImageLauncher.launch("image/*")
+                            },
                             modifier = Modifier.padding(end = 8.dp)
                         ) {
                             Icon(
@@ -152,9 +192,10 @@ fun AddFoodScreen(navController: NavController) {
                         }
                         IconButton(
                             onClick = {
+                                requestCameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                                 photoUri?.let { uri ->
                                     takePictureLauncher.launch(uri)
-                                }
+                                } ?: Toast.makeText(context, "Failed to create image URI", Toast.LENGTH_SHORT).show()
                             },
                             enabled = photoUri != null
                         ) {
@@ -193,16 +234,16 @@ fun AddFoodScreen(navController: NavController) {
                 )
             }
 
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = Color.Red,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
+//            if (errorMessage.isNotEmpty()) {
+//                Text(
+//                    text = errorMessage,
+//                    color = Color.Red,
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(8.dp),
+//                    textAlign = TextAlign.Center
+//                )
+//            }
         }
 
         Box(
@@ -237,10 +278,14 @@ fun AddFoodScreen(navController: NavController) {
 }
 
 // Hàm tạo file tạm để lưu ảnh chụp
-private fun createImageFile(context: Context): Uri? {
+private fun createImageFile(context: Context): Uri {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
     val imageFileName = "JPEG_${timeStamp}_"
-    val storageDir = context.externalCacheDir
+    val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
     val file = File.createTempFile(imageFileName, ".jpg", storageDir)
-    return Uri.fromFile(file)
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        file
+    )
 }

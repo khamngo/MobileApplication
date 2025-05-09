@@ -43,6 +43,8 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.material3:material3-window-size-class:1.1.0")
+
     implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
     implementation("com.google.android.material:material:1.9.0")
     implementation("com.google.firebase:firebase-messaging-ktx:23.4.1")
@@ -51,7 +53,7 @@ dependencies {
     implementation("io.ktor:ktor-client-android:2.3.7")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
-
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("com.patrykandpatrick.vico:compose:1.9.0")
 

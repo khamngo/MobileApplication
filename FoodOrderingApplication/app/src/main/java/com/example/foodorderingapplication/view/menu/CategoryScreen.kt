@@ -63,7 +63,7 @@ fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavCon
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFFFD700)) // Màu vàng
+                .background(Color(0xFFFFD700))
                 .padding(16.dp)
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -148,12 +148,12 @@ fun CategoryScreen(viewModel: FoodViewModel = viewModel(), navController: NavCon
             if (selectedTabIndex == 0) {
                 items(popular) { food ->
                     FoodItems(food, onClick = { navController.navigate("food_detail/${food.id}") })
-                    HorizontalDivider(modifier = Modifier.padding(12.dp))
+                    HorizontalDivider(modifier = Modifier.padding(4.dp))
                 }
             } else {
                 items(deal) { food ->
                     FoodItems(food, onClick = { navController.navigate("food_detail/${food.id}") })
-                    HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(4.dp))
                 }
             }
         }
@@ -180,7 +180,6 @@ fun FoodItems(foodItem: FoodItem, onClick: () -> Unit) {
             error = painterResource(id = R.drawable.image_error)
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
                .fillMaxWidth()
         ) {
@@ -189,10 +188,4 @@ fun FoodItems(foodItem: FoodItem, onClick: () -> Unit) {
             Text("$${foodItem.price}", color = Color.Red, fontWeight = FontWeight.Bold)
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun Preview() {
-
 }

@@ -1,45 +1,56 @@
 package com.example.foodorderingapplication.view.profile
 
+import android.app.TimePickerDialog
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ComponentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -47,14 +58,17 @@ import com.example.foodorderingapplication.model.OrderItem
 import com.example.foodorderingapplication.model.OrderStatus
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.admin.DeliveryStatusSection
+import com.example.foodorderingapplication.view.admin.InfoRow
 import com.example.foodorderingapplication.viewmodel.OrderDetailViewModel
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderDetailScreen(
     navController: NavController,
@@ -67,21 +81,12 @@ fun OrderDetailScreen(
     val context = LocalContext.current
     val hasReviewed by viewModel.hasReviewed.collectAsState()
 
-    // Dialog xác nhận hủy
     var showCancelDialog by remember { mutableStateOf(false) }
 
-    // State cho picker
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var selectedDate by remember { mutableStateOf("") }
-    var selectedTime by remember { mutableStateOf("") }
-
-    // Gọi fetchOrderDetail khi khởi tạo
     LaunchedEffect(orderId) {
         viewModel.fetchOrderDetail(orderId)
     }
 
-    // Dialog xác nhận hủy
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
@@ -91,7 +96,8 @@ fun OrderDetailScreen(
                 TextButton(onClick = {
                     viewModel.cancelOrder(orderId) {
                         showCancelDialog = false
-                        Toast.makeText(context, "Order cancelled successfully!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Order cancelled successfully!", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }) { Text("Yes") }
             },
@@ -101,43 +107,6 @@ fun OrderDetailScreen(
         )
     }
 
-    // DatePicker và TimePicker
-    if (showDatePicker) {
-        val datePicker = MaterialDatePicker.Builder.datePicker()
-            .setTitleText("Select Delivery Date")
-            .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
-            .build()
-        datePicker.addOnPositiveButtonClickListener { selection ->
-            val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(selection)
-            selectedDate = date
-            showDatePicker = false
-            showTimePicker = true
-        }
-        datePicker.addOnDismissListener { showDatePicker = false }
-        datePicker.show((context as AppCompatActivity).supportFragmentManager, "DATE_PICKER")
-    }
-
-    if (showTimePicker) {
-        val timePicker = MaterialTimePicker.Builder()
-            .setTitleText("Select Delivery Time")
-            .setTimeFormat(TimeFormat.CLOCK_12H)
-            .build()
-        timePicker.addOnPositiveButtonClickListener {
-            val hour = timePicker.hour
-            val minute = timePicker.minute
-            val amPm = if (hour >= 12) "PM" else "AM"
-            val hour12 = if (hour % 12 == 0) 12 else hour % 12
-            selectedTime = String.format("%02d:%02d %s", hour12, minute, amPm)
-            viewModel.buyAgain(orderId, selectedDate, selectedTime) {
-                selectedDate = ""
-                selectedTime = ""
-                showTimePicker = false
-                Toast.makeText(context, "New order created!", Toast.LENGTH_SHORT).show()
-            }
-        }
-        timePicker.addOnDismissListener { showTimePicker = false }
-        timePicker.show((context as AppCompatActivity).supportFragmentManager, "TIME_PICKER")
-    }
 
     Box(
         modifier = Modifier
@@ -207,7 +176,20 @@ fun OrderDetailScreen(
                 OrderActionButton(
                     orderStatus = OrderStatus.valueOf(orderDetail?.status ?: "Preparing"),
                     onCancel = { showCancelDialog = true },
-                    onBuyAgain = { showDatePicker = true },
+                    onBuyAgain = {
+                        val currentTime = Calendar.getInstance()
+                        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
+                        val selectedDate = dateFormat.format(currentTime.time)
+                        val selectedTime = timeFormat.format(currentTime.time)
+
+                        viewModel.buyAgain(orderId, selectedDate, selectedTime) {
+                            Toast.makeText(context, "New order created!", Toast.LENGTH_SHORT).show()
+                        }
+                        navController.popBackStack()
+                    },
+
                     onReview = { navController.navigate("review/$orderId") },
                     hasReviewed = hasReviewed
                 )
@@ -218,12 +200,26 @@ fun OrderDetailScreen(
 
 @Composable
 fun FromToInfo(order: OrderItem) {
+    val formattedDate = SimpleDateFormat("h a : dd-MM-yyyy", Locale.getDefault())
+        .format(order.orderDate.toDate())
+
     Column(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
     ) {
-        Column {
+        Text(
+            text = formattedDate,
+            fontSize = 14.sp,
+            color = Color.Gray,
+            fontStyle = FontStyle.Italic
+        )
+
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .fillMaxWidth()
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -244,7 +240,11 @@ fun FromToInfo(order: OrderItem) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Column {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .fillMaxWidth()
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -272,8 +272,6 @@ fun FromToInfo(order: OrderItem) {
 @Composable
 fun OrderDetailContent(order: OrderItem) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val orderDate = dateFormat.format(order.orderDate.toDate())
 
     Column(
         modifier = Modifier
@@ -282,12 +280,12 @@ fun OrderDetailContent(order: OrderItem) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text("Order detail", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-
+//        Spacer(modifier = Modifier.height(8.dp))
         order.items.forEach { item ->
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
                 modifier = Modifier
-                    .padding(vertical = 12.dp)
+                    .padding(8.dp)
                     .fillMaxWidth()
             ) {
                 AsyncImage(
@@ -299,10 +297,11 @@ fun OrderDetailContent(order: OrderItem) {
                     contentScale = ContentScale.Crop
                 )
 
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(item.name, fontWeight = FontWeight.Bold)
+                    Text("${item.price}",    fontWeight = FontWeight.Bold)
                     if (item.portion.isNotEmpty()) {
                         Text("Portion: ${item.portion}")
                     }
@@ -317,21 +316,35 @@ fun OrderDetailContent(order: OrderItem) {
 
                 Text(
                     currencyFormat.format(item.price * item.quantity),
+                    fontSize = 14.sp,
+                    color = Color.Red,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        OrderInfoRow("Order id:", order.orderId)
-        OrderInfoRow("Order date:", orderDate)
-        OrderInfoRow("Delivery date:", order.deliveryDate)
-        OrderInfoRow("Delivery time:", order.deliveryTime)
-        OrderInfoRow("Payment method:", order.paymentMethod)
-        OrderInfoRow("Promo:", order.promo.ifEmpty { "None" })
-        OrderInfoRow("Subtotal:", currencyFormat.format(order.subtotal))
-        OrderInfoRow("Shipping fee:", currencyFormat.format(order.shippingFee))
-        OrderInfoRow("Taxes:", currencyFormat.format(order.taxes))
-        OrderInfoRow("Discount:", currencyFormat.format(order.discount))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Order Information", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            InfoRow("Order ID:", order.orderId)
+            InfoRow("First Name:", order.shippingAddress.firstName)
+            InfoRow("Last Name:", order.shippingAddress.lastName)
+            InfoRow("Phone Number:", order.shippingAddress.phoneNumber)
+            InfoRow(
+                "Address:",
+                "${order.shippingAddress.street}, ${order.shippingAddress.ward}, " +
+                        "${order.shippingAddress.district}, ${order.shippingAddress.province}"
+            )
+            InfoRow("Delivery Date:", order.deliveryDate)
+            InfoRow("Delivery Time:", order.deliveryTime)
+            InfoRow("Promo:", order.promo.ifEmpty { "None" })
+            InfoRow("Payment Method:", order.paymentMethod)
+            InfoRow("Subtotal:", currencyFormat.format(order.subtotal))
+            InfoRow("Shipping Fee:", currencyFormat.format(order.shippingFee))
+            InfoRow("Taxes:", currencyFormat.format(order.taxes))
+            InfoRow("Discount:", currencyFormat.format(order.discount))
+        }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -347,17 +360,6 @@ fun OrderDetailContent(order: OrderItem) {
                 fontSize = 16.sp
             )
         }
-    }
-}
-
-@Composable
-fun OrderInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label)
-        Text(value)
     }
 }
 
@@ -394,6 +396,7 @@ fun OrderActionButton(
                     )
                 }
             }
+
             OrderStatus.Delivered -> {
                 if (hasReviewed) {
                     Button(
@@ -458,6 +461,7 @@ fun OrderActionButton(
                     }
                 }
             }
+
             OrderStatus.Shipped -> {
                 Button(
                     onClick = { },
@@ -479,6 +483,7 @@ fun OrderActionButton(
                     )
                 }
             }
+
             OrderStatus.Cancelled -> {
                 Button(
                     onClick = { },

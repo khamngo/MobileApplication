@@ -19,37 +19,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.foodorderingapplication.view.HeaderSection
-import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.foodorderingapplication.model.ReviewItem
-import com.example.foodorderingapplication.viewmodel.ReviewDetailViewModel
-import com.example.foodorderingapplication.viewmodel.ReviewViewModel
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.material3.CircularProgressIndicator
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.model.ReviewItem
+import com.example.foodorderingapplication.view.HeaderSection
+import com.example.foodorderingapplication.viewmodel.ReviewDetailViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun ReviewDetailScreen(
@@ -116,40 +112,43 @@ fun ReviewDetailScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(
-                        foodInfo.foodName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
+                    Row(horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            Text(
+                                foodInfo.foodName,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                    Text(
-                        foodInfo.description,
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
+                            Text(
+                                foodInfo.description,
+                                fontSize = 14.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                        }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Hiển thị rating trung bình
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Average Rating",
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = String.format("%.1f", averageRating),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
+                        // Hiển thị rating trung bình
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Average Rating",
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = String.format("%.1f", averageRating),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
@@ -167,6 +166,9 @@ fun ReviewDetailScreen(
 
 @Composable
 fun ReviewItem(reviewItem: ReviewItem, onReplyClick: () -> Unit) {
+    val formattedDate = SimpleDateFormat("h a : dd-MM-yyyy", Locale.getDefault())
+        .format(reviewItem.date.toDate())
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -178,7 +180,7 @@ fun ReviewItem(reviewItem: ReviewItem, onReplyClick: () -> Unit) {
                 Text("Review detail", fontSize = 14.sp)
             }
             Text(
-                text = reviewItem.date,
+                text = formattedDate,
                 fontStyle = FontStyle.Italic,
                 color = Color.Gray,
                 fontSize = 14.sp

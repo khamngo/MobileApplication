@@ -394,7 +394,6 @@ fun RestaurantSelectionSection(
     selectedRestaurant: RestaurantItem,
     viewModel: ShippingViewModel = viewModel()
 ) {
-//    val selectedRestaurant by viewModel.selectedRestaurant.collectAsState()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

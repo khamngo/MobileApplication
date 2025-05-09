@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -18,7 +19,7 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = Pink80
 )
 
-val GoldColor = Color(0xFFFFD700)
+val GoldColor = Color(0xFF000000)
 
 private val LightColorScheme = lightColorScheme(
     primary = GoldColor,
@@ -32,7 +33,6 @@ private val LightColorScheme = lightColorScheme(
     surface = Color.White,
     onSurface = Color.Black
 )
-
 
 @Composable
 fun FoodOrderingApplicationTheme(

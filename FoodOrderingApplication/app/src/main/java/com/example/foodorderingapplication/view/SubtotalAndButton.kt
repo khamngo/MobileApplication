@@ -24,7 +24,8 @@ fun SubtotalAndButton(
     subtotal: Double,
     navController: NavController,
     pageName: String,
-    onButtonClick: (() -> Unit)? = null
+    onButtonClick: (() -> Unit)? = null,
+    buttonEnabled: Boolean = true
 ) {
     Column(
         modifier = Modifier
@@ -49,6 +50,9 @@ fun SubtotalAndButton(
         Button(
             onClick = {
                 onButtonClick?.invoke()
+                if (buttonEnabled) {
+                    navController.navigate(pageName)
+                }
                 navController.navigate(pageName)
             },
             modifier = Modifier

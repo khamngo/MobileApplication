@@ -31,6 +31,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -66,6 +67,7 @@ import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.BottomNavBar
 import com.example.foodorderingapplication.model.BottomNavItem
+import com.example.foodorderingapplication.view.menu.FoodItems
 import com.example.foodorderingapplication.view.menu.TopBar
 import com.example.foodorderingapplication.viewmodel.FoodViewModel
 import kotlin.math.roundToInt
@@ -75,6 +77,8 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
     val foodList by viewModel.exploreFoods.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedFoodItemToDelete by remember { mutableStateOf<FoodItem?>(null) }
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
 
     val bottomNavItems = listOf(
         BottomNavItem.Home,
@@ -96,15 +100,17 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
                     .background(Color.White)
             ) {
                 item { TopBar() }
-                items(foodList) { food ->
-                    FoodCard(
-                        foodItem = food,
-                        onEdit = { navController.navigate("edit_food/${food.id}") },
-                        onDelete = {
-                            selectedFoodItemToDelete = food
-                            showDeleteDialog = true
-                        }
-                    )
+                if (searchResults.isNotEmpty()) {
+                    items(searchResults) { food ->
+                        FoodCard(
+                            foodItem = food,
+                            onEdit = { navController.navigate("edit_food/${food.id}") },
+                            onDelete = {
+                                selectedFoodItemToDelete = food
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
                 }
             }
 

@@ -27,14 +27,13 @@ class FavoriteViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // Trạng thái yêu thích của tất cả món ăn (danh sách foodId)
     val favoriteFoodIds = MutableStateFlow<Set<String>>(emptySet())
 
     val currentUserId: String?
         get() = auth.currentUser?.uid
 
     init {
-        loadFavorites() // Tự động gọi khi ViewModel được khởi tạo
+        loadFavorites()
     }
 
     fun loadFavorites() {

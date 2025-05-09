@@ -8,6 +8,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.pow
+import kotlin.math.round
 
 class CartViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -121,7 +123,8 @@ class CartViewModel : ViewModel() {
     }
 
     fun Double.roundTo(digits: Int): Double {
-        return "%.${digits}f".format(this).toDouble()
+        val factor = 10.0.pow(digits)
+        return round(this * factor) / factor
     }
 
     fun updateInstructions(foodId: String, instructions: String) {

@@ -76,15 +76,8 @@ fun ThankYouScreen(navController: NavController) {
                 .padding(start = 16.dp, end = 16.dp,  bottom = 24.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
         ) {
-            Text("Go Menu", fontWeight = FontWeight.Bold)
+            Text("Go Menu", fontWeight = FontWeight.Bold, color = Color.White)
         }
 
     }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPrevie22w() {
-    NavigationGraph()
 }

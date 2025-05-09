@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,11 +62,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -81,46 +85,104 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun MenuScreen(navController: NavController, viewModel: FoodViewModel = viewModel()) {
+fun MenuScreen(navController: NavController) {
+    val viewModel: FoodViewModel = viewModel()
+    val favoriteViewModel: FavoriteViewModel = viewModel()
+
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    val explore by viewModel.exploreFoods.collectAsState()
+    val bestseller by viewModel.bestsellerFoods.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val favoriteIds by favoriteViewModel.favoriteFoodIds.collectAsState()
 
-    Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFF7F7F7))
-
-            ) {
-                item { TopBar() }
-                if (searchQuery.isNotBlank() && searchResults.isNotEmpty()) {
-                    item {
-                        searchResults.forEach { food ->
-                            FoodItems(
-                                food,
-                                onClick = { navController.navigate("food_detail/${food.id}") })
-                            HorizontalDivider(modifier = Modifier.padding(12.dp))
-                        }
-                    }
-                } else {
-                    item { BannerSlider() }
-                    item { CategorySection(navController) }
-                    item { FoodListSection(navController = navController) }
-                }
-            }
+    Scaffold(
+        bottomBar = { BottomNavBar(navController) },
+        content = { paddingValues ->
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
-                DraggableCartIcon(navController = navController)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFF7F7F7))
+                ) {
+                    item { TopBar() }
+
+                    if (searchQuery.isNotBlank() && searchResults.isNotEmpty()) {
+                        items(searchResults) { food ->
+                            FoodItems(food, onClick = {
+                                navController.navigate("food_detail/${food.id}")
+                            })
+                            HorizontalDivider(modifier = Modifier.padding(4.dp))
+                        }
+                    } else {
+                        item { BannerSlider() }
+                        item { CategorySection(navController) }
+
+                        item {
+                            Text(
+                                "Best Seller",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 14.dp, top = 16.dp)
+                            )
+                        }
+
+                        item {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(bestseller) { food ->
+                                    FoodItem(food, onClick = {
+                                        navController.navigate("food_detail/${food.id}")
+                                    })
+                                }
+                            }
+                        }
+
+                        item {
+                            Text(
+                                "Explore More",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 14.dp, top = 8.dp)
+                            )
+                        }
+
+                        items(explore) { food ->
+                            LargeFoodItem(
+                                foodItem = food,
+                                onClick = { navController.navigate("food_detail/${food.id}") },
+                                isFavorite = favoriteIds.contains(food.id),
+                                onToggleFavorite = { favoriteViewModel.toggleFavorite(food) }
+                            )
+                        }
+                    }
+                }
+
+                Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+                    DraggableCartIcon(navController = navController)
+                }
+
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.3f)) // semi-transparent overlay
+                            .zIndex(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
-    }
     )
 }
 
@@ -132,7 +194,7 @@ fun TopBar() {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFFFD700))
-            .padding(16.dp),
+            .padding(16.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -143,9 +205,9 @@ fun TopBar() {
                 painter = painterResource(id = R.drawable.icon_title),
                 contentDescription = "Logo",
                 modifier = Modifier
-                    .size(60.dp) // Tự điều chỉnh tùy kích thước bạn muốn
+                    .size(60.dp)
                     .padding(end = 4.dp),
-                contentScale = ContentScale.Crop // Tự scale hình cho vừa vùng hiển thị
+                contentScale = ContentScale.Crop
             )
             Text(
                 text = "KFoods",
@@ -222,7 +284,7 @@ fun BannerSlider() {
     // Tự động chuyển slide mỗi 5 giây
     LaunchedEffect(pagerState) {
         while (true) {
-            delay(5000) // Chờ 5 giây
+            delay(5000)
             coroutineScope.launch {
                 val nextPage = (pagerState.currentPage + 1) % bannerImages.size
                 pagerState.animateScrollToPage(nextPage)
@@ -251,7 +313,6 @@ fun BannerSlider() {
             )
         }
 
-        // Text bên trái giữa banner
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -267,7 +328,6 @@ fun BannerSlider() {
             )
         }
 
-        // Indicator ở dưới banner
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -336,53 +396,6 @@ fun CategoryItem(text: String, icon: ImageVector, navController: NavController, 
 }
 
 @Composable
-fun FoodListSection(
-    viewModel: FoodViewModel = viewModel(),
-    navController: NavController, favoriteViewModel: FavoriteViewModel = viewModel()
-) {
-    val explore by viewModel.exploreFoods.collectAsState()
-    val bestseller by viewModel.bestsellerFoods.collectAsState()
-    val favoriteIds by favoriteViewModel.favoriteFoodIds.collectAsState()
-
-    Column(modifier = Modifier.padding(16.dp))
-    {
-        Text("Best Seller", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(bestseller) { food ->
-                FoodItem(food, onClick = {
-                    navController.navigate("food_detail/${food.id}")
-                })
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Explore More", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            explore.forEach { food ->
-                LargeFoodItem(
-                    foodItem = food,
-                    onClick = { navController.navigate("food_detail/${food.id}") },
-                    isFavorite = favoriteIds.contains(food.id),
-                    onToggleFavorite = { favoriteViewModel.toggleFavorite(food) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
@@ -407,49 +420,49 @@ fun FoodItem(foodItem: FoodItem, onClick: () -> Unit) {
                 placeholder = painterResource(id = R.drawable.placeholder),
                 error = painterResource(id = R.drawable.image_error)
             )
+            Spacer(modifier = Modifier.height(2.dp))
+            Column {
+                Text(
+                    text = foodItem.name,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp),
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-            Text(
-                text = foodItem.name,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .padding(top = 6.dp),
-                fontSize = 16.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Text(
-                text = foodItem.description,
-                color = Color.Gray,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .padding(top = 4.dp),
-                fontSize = 14.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
+                Text(
+                    text = foodItem.description,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp),
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
-                    .padding(8.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
                     .fillMaxWidth()
             ) {
                 Text(
                     text = "$${foodItem.price}",
                     color = Color.Red,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                 )
 
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Star,
                         contentDescription = "Rating",
                         tint = Color.Yellow,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                     Text(
                         text = foodItem.rating.toString(),
@@ -471,9 +484,9 @@ fun LargeFoodItem(
 ) {
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .padding(top = 16.dp, start = 16.dp, bottom = 2.dp, end = 16.dp)
     ) {
         Box {
             AsyncImage(
@@ -491,7 +504,7 @@ fun LargeFoodItem(
 
             Box(
                 modifier = Modifier
-                    .offset(x = 8.dp, y = (-6).dp)
+                    .offset(x = 8.dp, y = (-8).dp)
                     .background(Color.White, shape = RoundedCornerShape(16.dp))
                     .align(Alignment.BottomStart)
             ) {
@@ -499,7 +512,7 @@ fun LargeFoodItem(
                     text = "$${foodItem.price}",
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
             }
 
@@ -547,6 +560,7 @@ fun LargeFoodItem(
                 )
             }
         }
+
         Text(
             text = foodItem.description,
             color = Color.Gray,

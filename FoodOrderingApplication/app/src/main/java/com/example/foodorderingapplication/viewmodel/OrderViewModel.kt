@@ -35,7 +35,7 @@ class OrderViewModel : ViewModel() {
         fetchRecentOrders()
     }
 
-    private fun fetchRecentOrders() {
+    internal fun fetchRecentOrders() {
         val userId = auth.currentUser?.uid ?: return
         db.collection("orders")
             .whereEqualTo("userId", userId)
@@ -71,29 +71,12 @@ class OrderViewModel : ViewModel() {
             }
     }
 
-    private fun fetchUserOrders() {
+    internal fun fetchUserOrders() {
         val userId = auth.currentUser?.uid ?: return
         viewModelScope.launch {
             try {
                 val snapshot = db.collection("orders")
                     .whereEqualTo("userId", userId)
-                    .get()
-                    .await()
-
-                val orderList = snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(OrderItem::class.java)?.copy(orderId = doc.id)
-                }
-                _orders.value = orderList.sortedByDescending { it.orderDate }
-            } catch (e: Exception) {
-                println("Error loading order: ${e.message}")
-            }
-        }
-    }
-
-    private fun fetchOrders() {
-        viewModelScope.launch {
-            try {
-                val snapshot = db.collection("orders")
                     .get()
                     .await()
 

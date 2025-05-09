@@ -70,6 +70,7 @@ import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 @SuppressLint("DefaultLocale")
@@ -86,10 +87,6 @@ fun OrderDetailScreen(
 
     var showConfirmDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var selectedDate by remember { mutableStateOf("") }
-    var selectedTime by remember { mutableStateOf("") }
 
     LaunchedEffect(orderId) {
         viewModel.fetchOrderDetail(orderId)
@@ -106,7 +103,11 @@ fun OrderDetailScreen(
                     onClick = {
                         showConfirmDialog = false
                         viewModel.acceptOrder(orderId) {
-                            Toast.makeText(context, "Order approved successfully!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Order approved successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 ) {
@@ -136,44 +137,6 @@ fun OrderDetailScreen(
                 TextButton(onClick = { showCancelDialog = false }) { Text("No") }
             }
         )
-    }
-
-    // DatePicker và TimePicker cho Buy Again
-    if (showDatePicker) {
-        val datePicker = MaterialDatePicker.Builder.datePicker()
-            .setTitleText("Select Delivery Date")
-            .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
-            .build()
-        datePicker.addOnPositiveButtonClickListener { selection ->
-            val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(selection)
-            selectedDate = date
-            showDatePicker = false
-            showTimePicker = true
-        }
-        datePicker.addOnDismissListener { showDatePicker = false }
-        datePicker.show((context as AppCompatActivity).supportFragmentManager, "DATE_PICKER")
-    }
-
-    if (showTimePicker) {
-        val timePicker = MaterialTimePicker.Builder()
-            .setTitleText("Select Delivery Time")
-            .setTimeFormat(TimeFormat.CLOCK_12H)
-            .build()
-        timePicker.addOnPositiveButtonClickListener {
-            val hour = timePicker.hour
-            val minute = timePicker.minute
-            val amPm = if (hour >= 12) "PM" else "AM"
-            val hour12 = if (hour % 12 == 0) 12 else hour % 12
-            selectedTime = String.format("%02d:%02d %s", hour12, minute, amPm)
-            viewModel.buyAgain(orderId, selectedDate, selectedTime) {
-                selectedDate = ""
-                selectedTime = ""
-                showTimePicker = false
-                Toast.makeText(context, "Đơn hàng mới đã được tạo!", Toast.LENGTH_SHORT).show()
-            }
-        }
-        timePicker.addOnDismissListener { showTimePicker = false }
-        timePicker.show((context as AppCompatActivity).supportFragmentManager, "TIME_PICKER")
     }
 
     Column(
@@ -214,7 +177,19 @@ fun OrderDetailScreen(
                     order = order,
                     onAcceptClick = { showConfirmDialog = true },
                     onCancelClick = { showCancelDialog = true },
-                    onBuyAgainClick = { showDatePicker = true }
+                    onBuyAgainClick = {
+                        val currentTime = Calendar.getInstance()
+                        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
+                        val selectedDate = dateFormat.format(currentTime.time)
+                        val selectedTime = timeFormat.format(currentTime.time)
+
+                        viewModel.buyAgain(orderId, selectedDate, selectedTime) {
+                            Toast.makeText(context, "New order created!", Toast.LENGTH_SHORT).show()
+                        }
+                        navController.popBackStack()
+                    }
                 )
             } ?: run {
                 Box(
@@ -324,7 +299,7 @@ fun OrderItemCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(18.dp)
+            .padding(16.dp)
             .background(Color.White),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -354,7 +329,11 @@ fun OrderItemCard(
         }
 
         // From / To Info
-        Column {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .fillMaxWidth()
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -375,7 +354,11 @@ fun OrderItemCard(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        Column {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .fillMaxWidth()
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -481,34 +464,32 @@ fun OrderItemCard(
 fun CartItemRow(cartItem: CartItem) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.Top,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(8.dp)
     ) {
         AsyncImage(
             model = cartItem.imageUrl,
             contentDescription = cartItem.name,
             modifier = Modifier
-                .size(84.dp)
+                .size(60.dp)
                 .clip(RoundedCornerShape(12.dp)),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(id = R.drawable.placeholder)
         )
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = cartItem.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
             Text(
-                text = currencyFormat.format(cartItem.price * cartItem.quantity),
+                text = currencyFormat.format(cartItem.price),
                 fontSize = 14.sp,
-                color = Color.Red,
                 fontWeight = FontWeight.Bold
             )
             Text(
@@ -528,6 +509,13 @@ fun CartItemRow(cartItem: CartItem) {
                 fontSize = 14.sp
             )
         }
+
+        Text(
+            text = currencyFormat.format(cartItem.price * cartItem.quantity),
+            fontSize = 14.sp,
+            color = Color.Red,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

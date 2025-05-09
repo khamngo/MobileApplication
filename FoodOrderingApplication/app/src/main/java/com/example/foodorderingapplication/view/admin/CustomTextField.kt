@@ -2,6 +2,7 @@ package com.example.foodorderingapplication.view.admin
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -14,7 +15,8 @@ import androidx.compose.ui.unit.dp
 fun CustomTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String
+    label: String,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     OutlinedTextField(
         value = value,
@@ -24,6 +26,7 @@ fun CustomTextField(
         },
         singleLine = true,
         onValueChange = onValueChange,
+        keyboardOptions = keyboardOptions,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp),

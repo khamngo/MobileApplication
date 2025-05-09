@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.model.BottomNavItem
 
 @Composable
 fun ThanksScreen(navController: NavController) {
@@ -62,7 +63,7 @@ fun ThanksScreen(navController: NavController) {
 
         Column {
             Button(
-                onClick = {navController.navigate("")},
+                onClick = {navController.navigate(BottomNavItem.Home.route)},
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -70,13 +71,13 @@ fun ThanksScreen(navController: NavController) {
                     .padding(horizontal = 16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
             ) {
-                Text("Book More", fontWeight = FontWeight.Bold)
+                Text("Book More", fontWeight = FontWeight.Bold, color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = {navController.navigate("menu")},
+                onClick = {navController.navigate(BottomNavItem.Menu.route)},
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -84,7 +85,7 @@ fun ThanksScreen(navController: NavController) {
                     .padding(horizontal = 16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
             ) {
-                Text("Go Menu", fontWeight = FontWeight.Bold)
+                Text("Go Menu", fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }

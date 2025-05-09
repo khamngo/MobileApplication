@@ -2,7 +2,6 @@ package com.example.foodorderingapplication.view.profile
 
 import android.app.Activity
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,14 +21,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCard
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,16 +55,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.foodorderingapplication.MainActivity
+import com.example.foodorderingapplication.AdminActivity
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.SettingOption
 import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.view.BottomNavBar
+import com.example.foodorderingapplication.viewmodel.AuthViewModel
 import com.example.foodorderingapplication.viewmodel.MyAccountViewModel
 
 @Composable
-fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = viewModel()) {
+fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = viewModel(),authViewModel: AuthViewModel = viewModel()) {
     val userState by viewModel.user.collectAsState()
+    val userRole by authViewModel.userRole.collectAsState()
 
     val settingOptions = listOf(
         SettingOption(Icons.Default.Person, "My Account", "my_account"),
@@ -76,79 +75,128 @@ fun ProfileScreen(navController: NavController, viewModel: MyAccountViewModel = 
         SettingOption(Icons.Default.Favorite, "My Favorite", "my_favorite"),
         SettingOption(Icons.Default.AddCard, "Payment Method", "payment_method"),
     )
+    val context = LocalContext.current
+    val activity = (context as? Activity)
+
+    LaunchedEffect(Unit) {
+        authViewModel.checkUserAndRole()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadUserData()
     }
 
-    Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF7F7F7))
-                .padding(paddingValues).verticalScroll(rememberScrollState())
-        ) {
-            ProfileHeaderSection(userState.username, userState.email,
-                userState.avatarUrl.toString()
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+    var showDialog by remember { mutableStateOf(false) }
 
-            ProfileSettingsSection(
-                title = "Account Settings",
-                settings = settingOptions,
-                onNavigate = { route -> navController.navigate(route) }
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-
-            ProfileSettingsSection(
-                title = "General Settings",
-                settings = listOf(SettingOption(Icons.Default.Info, "About us", "about_us")),
-                onNavigate = { route -> navController.navigate(route) }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-            var showLogoutDialog by remember { mutableStateOf(false) }
-            if (showLogoutDialog) {
-                AlertDialog(
-                    onDismissRequest = { showLogoutDialog = false },
-                    title = { Text("Confirm logout") },
-                    text = { Text("Are you sure you want to log out of the application?") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            showLogoutDialog = false
-                            viewModel.logout()
-                            navController.navigate("login") {
-                                popUpTo("intro") { inclusive = true }
-                            }
-                        }) {
-                            Text("Agree")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showLogoutDialog = false }) {
-                            Text("Cancel")
-                        }
-                    }
-                )
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Confirm logout") },
+            text = { Text("Do you want to move to admin mode?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                    val intent = Intent(context, AdminActivity::class.java)
+                    context.startActivity(intent)
+                    activity?.finish()
+                }) {
+                    Text("Agree")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Cancel")
+                }
             }
-            // Logout Button
-            Button(
-                onClick = {
-                        showLogoutDialog  =true
-                },
+        )
+    }
+
+    Scaffold(bottomBar = { BottomNavBar(navController) }, content = { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    .fillMaxSize()
+                    .background(Color(0xFFF7F7F7))
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Text(text = "Log out", color = Color.White, fontWeight = FontWeight.Bold)
+
+                if (userRole == "admin") {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(4.dp)
+                            .clickable {
+                                showDialog = true
+                            }
+                    ) {
+                        Icon(Icons.Default.Logout, contentDescription = "Logout")
+                    }
+                }
+
+                ProfileHeaderSection(
+                    userState.username, userState.email,
+                    userState.avatarUrl.toString()
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                ProfileSettingsSection(
+                    title = "Account Settings",
+                    settings = settingOptions,
+                    onNavigate = { route -> navController.navigate(route) }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                ProfileSettingsSection(
+                    title = "General Settings",
+                    settings = listOf(SettingOption(Icons.Default.Info, "About us", "about_us")),
+                    onNavigate = { route -> navController.navigate(route) }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+                var showLogoutDialog by remember { mutableStateOf(false) }
+                if (showLogoutDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showLogoutDialog = false },
+                        title = { Text("Confirm logout") },
+                        text = { Text("Are you sure you want to log out of the application?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showLogoutDialog = false
+                                authViewModel.logout()
+                                navController.navigate("login") {
+                                    popUpTo("intro") { inclusive = true }
+                                }
+                            }) {
+                                Text("Agree")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showLogoutDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
+                // Logout Button
+                Button(
+                    onClick = {
+                        showLogoutDialog = true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text(text = "Log out", color = Color.White, fontWeight = FontWeight.Bold)
+                }
             }
         }
     })
 }
 
 @Composable
-fun ProfileHeaderSection(userName: String, location: String, avatarUrl: String) {
+fun ProfileHeaderSection(userName: String, email: String, avatarUrl: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -178,7 +226,7 @@ fun ProfileHeaderSection(userName: String, location: String, avatarUrl: String) 
         )
 
         Text(
-            text = location,
+            text = email,
             color = Color.Gray,
             fontSize = 16.sp
         )
@@ -223,7 +271,8 @@ fun SettingItem(icon: ImageVector, title: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick).padding(horizontal = 18.dp, vertical = 16.dp),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

@@ -67,7 +67,7 @@ fun FavoriteScreen(
             }
         } else if (favoriteItems.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Không có món ăn yêu thích", color = Color.Gray)
+                Text("No favorite food", color = Color.Gray)
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -96,7 +96,7 @@ fun FavoriteFoodItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(12.dp)
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(4.dp),
         shape = RoundedCornerShape(8.dp),
@@ -105,20 +105,20 @@ fun FavoriteFoodItem(
         Row(verticalAlignment = Alignment.Top,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(6.dp)) {
+                .padding(8.dp)) {
             AsyncImage(
                 model = foodItem.imageUrl,
                 contentDescription = foodItem.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(70.dp)
+                    .size(60.dp)
                     .clip(RoundedCornerShape(8.dp))
             )
 
             Column(modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                verticalArrangement = Arrangement.Top) {
                 Text(foodItem.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(foodItem.description, maxLines = 2, fontSize = 12.sp, color = Color.Gray)
             }

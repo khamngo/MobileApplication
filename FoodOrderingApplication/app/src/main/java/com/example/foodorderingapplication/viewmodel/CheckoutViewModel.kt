@@ -1,6 +1,9 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.R.attr.order
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.CartItem
@@ -10,6 +13,8 @@ import com.example.foodorderingapplication.model.ShippingAddress
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,27 +22,34 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToInt
 
+@RequiresApi(Build.VERSION_CODES.O)
 class CheckoutViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
     // Giỏ hàng
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
-    val cartItems: StateFlow<List<CartItem>> = _cartItems
+    val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
 
     // Subtotal
     private val _subtotal = MutableStateFlow(0.0)
-    val subtotal: StateFlow<Double> = _subtotal
+    val subtotal: StateFlow<Double> = _subtotal.asStateFlow()
 
     // Mã khuyến mãi
     private val _selectedPromo = MutableStateFlow("Free Shipping")
-    val selectedPromo: StateFlow<String> = _selectedPromo
+    val selectedPromo: StateFlow<String> = _selectedPromo.asStateFlow()
 
     // Giảm giá dựa trên promo
     val discount: StateFlow<Double> = combine(_selectedPromo, _subtotal) { promo, subtotal ->
@@ -50,41 +62,43 @@ class CheckoutViewModel : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-
     val taxes = 2.0
     val shippingFee = 2.0
 
     val total: StateFlow<Double> = combine(_subtotal, discount) { sub, dis ->
-        val fee = if (dis == 0.0) 0.0 else shippingFee
+        val fee = if (_selectedPromo.value == "Free Shipping" || dis > 0.0) 0.0 else shippingFee
         val rawTotal = (sub - dis + taxes + fee).coerceAtLeast(0.0)
-
-        val result = kotlin.math.round(rawTotal * 100) / 100  // làm tròn 2 chữ số
-        Log.d("TOTAL_DEBUG", "Subtotal: $sub, Discount: $dis, Total: $result")
-        result
+        kotlin.math.round(rawTotal * 100) / 100.0 // Làm tròn 2 chữ số
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
-
 
     // Thông tin giao hàng
     private val _shippingAddress = MutableStateFlow(ShippingAddress())
-    val shippingAddress: StateFlow<ShippingAddress> = _shippingAddress
+    val shippingAddress: StateFlow<ShippingAddress> = _shippingAddress.asStateFlow()
 
     private val dateFormat = SimpleDateFormat("EEEE, dd/MM/yyyy", Locale.ENGLISH)
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.ENGLISH)
-
     private val calendar = Calendar.getInstance()
+
     private val _deliveryDate = MutableStateFlow(dateFormat.format(calendar.time))
-    val deliveryDate: StateFlow<String> = _deliveryDate
+    val deliveryDate: StateFlow<String> = _deliveryDate.asStateFlow()
 
     private val _deliveryTime = MutableStateFlow(timeFormat.format(calendar.time))
-    val deliveryTime: StateFlow<String> = _deliveryTime
-
+    val deliveryTime: StateFlow<String> = _deliveryTime.asStateFlow()
 
     // Phương thức thanh toán
     private val _paymentMethod = MutableStateFlow("COD")
-    val paymentMethod: StateFlow<String> = _paymentMethod
+    val paymentMethod: StateFlow<String> = _paymentMethod.asStateFlow()
 
-    private val _orderStatus = MutableStateFlow<String?>(null)
-    val orderStatus: StateFlow<String?> = _orderStatus.asStateFlow()
+    // Trạng thái kiểm tra địa chỉ hợp lệ
+    private val _isShippingAddressValid = MutableStateFlow(false)
+    val isShippingAddressValid: StateFlow<Boolean> = _isShippingAddressValid.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow("")
+    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
+
+    private val client = OkHttpClient()
+    private val fcmApiUrl = "https://fcm.googleapis.com/v1/projects/your-project-id/messages:send"
+    private val serverKey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCrJGym4mcmqyWd" // Thay bằng Server Key từ
 
     init {
         loadCartItems()
@@ -99,7 +113,7 @@ class CheckoutViewModel : ViewModel() {
                 .collection("items")
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
-                        println("Error while getting cart: $e")
+                        _errorMessage.value = "Error while getting cart: $e"
                         return@addSnapshotListener
                     }
                     if (snapshot != null) {
@@ -158,16 +172,32 @@ class CheckoutViewModel : ViewModel() {
                             restaurant = restaurant,
                             isDefault = doc.getBoolean("isDefault") == true
                         )
+                        validateShippingAddress()
+                    } else {
+                        _shippingAddress.value = ShippingAddress()
+                        _isShippingAddressValid.value = false
                     }
                 }
                 .addOnFailureListener { e ->
-                    println("Error loading address: $e")
+                    _errorMessage.value = "Error loading address: $e"
                 }
         }
     }
 
     fun reloadShippingAddress() {
         loadShippingAddress()
+    }
+
+    // Kiểm tra tính hợp lệ của địa chỉ
+    private fun validateShippingAddress() {
+        val address = _shippingAddress.value
+        _isShippingAddressValid.value = address.firstName.isNotBlank() &&
+                address.lastName.isNotBlank() &&
+                address.phoneNumber.isNotBlank() &&
+                address.province.isNotBlank() &&
+                address.district.isNotBlank() &&
+                address.ward.isNotBlank() &&
+                address.street.isNotBlank()
     }
 
     // Cập nhật ngày giờ giao hàng
@@ -186,9 +216,20 @@ class CheckoutViewModel : ViewModel() {
         _paymentMethod.value = method
     }
 
+    private val _isPlacingOrder = MutableStateFlow(false)
+    val isPlacingOrder: StateFlow<Boolean> = _isPlacingOrder.asStateFlow()
+
     // Đặt hàng
     fun placeOrder() {
-        val userId = auth.currentUser?.uid ?: return
+        if (!_isShippingAddressValid.value) {
+            _errorMessage.value = "Please add a shipping address before placing the order"
+            return
+        }
+
+        val userId = auth.currentUser?.uid ?: run {
+            _errorMessage.value = "User not logged in"
+            return
+        }
         val orderId = UUID.randomUUID().toString()
         val orderItem = OrderItem(
             userId = userId,
@@ -209,15 +250,27 @@ class CheckoutViewModel : ViewModel() {
         )
 
         viewModelScope.launch {
-            db.collection("orders").document(orderId)
-                .set(orderItem)
-                .addOnSuccessListener {
-                    clearCart(userId)
-                    println("Ordered successfully!")
-                }
-                .addOnFailureListener { e ->
-                    println("Error when ordering: $e")
-                }
+            _isPlacingOrder.value = true
+            try {
+                delay(2000) // Giả lập xử lý
+                db.collection("orders").document(orderId)
+                    .set(orderItem)
+                    .addOnSuccessListener {
+                        clearCart(userId)
+                        _errorMessage.value = "Order placed successfully"
+                    }
+                    .addOnFailureListener { e ->
+                        _errorMessage.value = "Error when ordering: $e"
+                    }
+                sendNotification(
+                    title = "Order Cancelled",
+                    body = "Your order #${orderId} has been cancelled."
+                )
+            } catch (e: Exception) {
+                _errorMessage.value = "Error placing order: $e"
+            } finally {
+                _isPlacingOrder.value = false
+            }
         }
     }
 
@@ -236,9 +289,69 @@ class CheckoutViewModel : ViewModel() {
                         .addOnSuccessListener {
                             _cartItems.value = emptyList()
                             _subtotal.value = 0.0
-                            println("Cart deleted")
+                        }
+                        .addOnFailureListener { e ->
+                            _errorMessage.value = "Error clearing cart: $e"
                         }
                 }
         }
+    }
+
+    private fun sendNotification(title: String, body: String) {
+        viewModelScope.launch {
+            try {
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: throw Exception("User not logged in")
+                // Lưu vào Firestore
+                db.collection("users")
+                    .document(userId)
+                    .collection("notifications")
+                    .add(
+                        mapOf(
+                            "title" to title,
+                            "body" to body,
+                            "timestamp" to Timestamp.now()
+                        )
+                    ).await()
+
+                // Gửi thông báo qua FCM
+                val message = JSONObject().apply {
+                    put("message", JSONObject().apply {
+                        put("token", getDeviceToken(userId)) // Hoặc dùng topic "/topics/user_$userId"
+                        put("notification", JSONObject().apply {
+                            put("title", title)
+                            put("body", body)
+                        })
+                        put("android", JSONObject().apply {
+                            put("priority", "high")
+                        })
+                    })
+                }
+
+                val requestBody = RequestBody.create(
+                    "application/json; charset=utf-8".toMediaType(),
+                    message.toString()
+                )
+                val request = Request.Builder()
+                    .url(fcmApiUrl)
+                    .post(requestBody)
+                    .addHeader("Authorization", "Bearer $serverKey")
+                    .addHeader("Content-Type", "application/json")
+                    .build()
+
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) {
+                    throw Exception("FCM request failed: ${response.body?.string()}")
+                }
+                println("FCM sent successfully: $message")
+            } catch (e: Exception) {
+                _errorMessage.value = "Error sending notification: ${e.message}"
+            }
+        }
+    }
+
+    private suspend fun getDeviceToken(userId: String): String {
+        // Giả lập lấy token từ Firestore hoặc FirebaseMessaging
+        return FirebaseMessaging.getInstance().token.await() // Lấy token của thiết bị hiện tại
+        // Hoặc lấy từ Firestore: db.collection("users").document(userId).get().await().getString("fcmToken") ?: ""
     }
 }

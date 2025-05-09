@@ -1,6 +1,7 @@
 package com.example.foodorderingapplication.view.menu
 
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +67,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -90,20 +94,28 @@ fun CheckoutScreen(
     val total by viewModel.total.collectAsState()
     val selectedPromo by viewModel.selectedPromo.collectAsState()
     val taxes = viewModel.taxes
+    val isPlacingOrder by viewModel.isPlacingOrder.collectAsState()
+    val isShippingAddressValid by viewModel.isShippingAddressValid.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val context = LocalContext.current
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val savedStateHandle = currentBackStackEntry?.savedStateHandle
 
-    // Listen for the result
     LaunchedEffect(savedStateHandle) {
         savedStateHandle?.getStateFlow<Boolean?>("add_shopping_address", null)
             ?.collect { updated ->
                 if (updated == true) {
                     viewModel.reloadShippingAddress()
-                    // Reset để lần sau không bị gọi lại
                     savedStateHandle["add_shopping_address"] = null
                 }
             }
+    }
+
+    LaunchedEffect(errorMessage) {
+        if (errorMessage.isNotEmpty()) {
+            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+        }
     }
 
     Box(
@@ -111,6 +123,20 @@ fun CheckoutScreen(
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
     ) {
+        // Loading Dialog
+        if (isPlacingOrder) {
+            Dialog(onDismissRequest = {}) {
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .background(Color.White, shape = RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -146,7 +172,6 @@ fun CheckoutScreen(
             PaymentMethod(viewModel)
 
             Spacer(modifier = Modifier.height(6.dp))
-
         }
 
         // Subtotal & Button
@@ -157,11 +182,16 @@ fun CheckoutScreen(
                 .background(Color.White)
         ) {
             SubtotalAndButton(
-                title = "Place Order",
+                title = if (isPlacingOrder) "Processing..." else "Place Order",
                 subtotal = total,
                 navController = navController,
                 pageName = "thank_you",
-                onButtonClick = { viewModel.placeOrder() }
+                onButtonClick = {
+                    if (!isPlacingOrder && isShippingAddressValid) {
+                        viewModel.placeOrder()
+                    }
+                },
+                buttonEnabled = !isPlacingOrder && isShippingAddressValid
             )
         }
     }
@@ -218,6 +248,7 @@ fun ShippingDeliveryPromosSection(viewModel: CheckoutViewModel, navController: N
     }
 }
 
+
 @Composable
 fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
     Row(
@@ -268,7 +299,7 @@ fun ShippingRow(title: String, value: String, onClick: () -> Unit) {
 @Composable
 fun ItemsList(cartItemItems: List<CartItem>, viewModel: CartViewModel = viewModel()) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
@@ -316,7 +347,6 @@ fun ItemRow(cartItem: CartItem) {
         )
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.fillMaxWidth(0.4f)
         ) {
             Text(
@@ -344,7 +374,6 @@ fun OrderSummary(taxes: Double, subtotal: Double, total: Double, isFreeShipping:
             .background(Color.White)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
@@ -361,7 +390,6 @@ fun OrderSummary(taxes: Double, subtotal: Double, total: Double, isFreeShipping:
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
-
         }
     }
 }
@@ -386,6 +414,7 @@ fun SummaryRow(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PaymentMethod(viewModel: CheckoutViewModel) {
     val paymentMethod by viewModel.paymentMethod.collectAsState()

@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FoodItem
@@ -50,7 +51,7 @@ class AddFoodViewModel : ViewModel() {
         _tags.value = newTags
     }
 
-    fun uploadImageToFirebase(uri: android.net.Uri) {
+    fun uploadImageToFirebase(uri: Uri) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -72,9 +73,28 @@ class AddFoodViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val priceValue = _price.value.toDoubleOrNull() ?: 0.0
-                val foodId = UUID.randomUUID().toString()
+                val priceValue = _price.value.toDoubleOrNull()
+                if (priceValue == null) {
+                    _errorMessage.value = "Invalid price format"
+                    return@launch
+                }
 
+                if (_foodName.value.isBlank()) {
+                    _errorMessage.value = "Food name cannot be empty"
+                    return@launch
+                }
+
+                if (_description.value.isBlank()) {
+                    _errorMessage.value = "Description cannot be empty"
+                    return@launch
+                }
+
+                if (_imageUrl.value.isBlank()) {
+                    _errorMessage.value = "Image URL cannot be empty"
+                    return@launch
+                }
+
+                val foodId = UUID.randomUUID().toString()
                 val newFood = FoodItem(
                     id = foodId,
                     name = _foodName.value,

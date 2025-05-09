@@ -1,8 +1,10 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.R.attr.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.ReviewItem
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +63,7 @@ class ReviewDetailViewModel : ViewModel() {
                             description = description,
                             rating = (doc.getLong("rating") ?: 0).toInt(),
                             reviewText = doc.getString("reviewText") ?: "",
-                            date = timestamp?.toDate()?.let { dateFormat.format(it) } ?: "",
+                            date = doc?.get("timestamp") as? Timestamp ?: Timestamp.now(),
                             reviewer = reviewer
                         )
                     } catch (e: Exception) {

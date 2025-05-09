@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,10 +39,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.ReviewListViewModel
-import androidx.compose.runtime.getValue
-import com.example.foodorderingapplication.model.FoodItem
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -118,15 +118,15 @@ fun FoodReviewItemCard(item: FoodItem, onClick: () -> Unit = {}) {
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(item.name, fontWeight = FontWeight.Bold)
             Text(item.description, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(
-                text = NumberFormat.getCurrencyInstance(Locale.US).format(item.price),
-                color = Color.Red,
-                fontWeight = FontWeight.SemiBold
-            )
-            Row {
+//            Text(
+//                text = NumberFormat.getCurrencyInstance(Locale.US).format(item.price),
+//                color = Color.Red,
+//                fontWeight = FontWeight.SemiBold
+//            )
+            Row (verticalAlignment = Alignment.CenterVertically){
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "Rating",

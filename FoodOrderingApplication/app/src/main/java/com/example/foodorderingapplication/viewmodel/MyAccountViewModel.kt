@@ -53,22 +53,30 @@ class MyAccountViewModel : ViewModel() {
                 val fileName = "avatar_${userId}_${System.currentTimeMillis()}.jpg"
                 val storageRef = storage.reference.child("avatars/$fileName")
 
-                // Upload
-                storageRef.putFile(uri).await()
+                // Xóa ảnh cũ nếu có
+                val oldAvatarUrl = _user.value.avatarUrl
+                if (oldAvatarUrl?.isNotBlank() == true) {
+                    try {
+                        val oldRef = storage.getReferenceFromUrl(oldAvatarUrl.toString())
+                        oldRef.delete().await()
+                    } catch (e: Exception) {
+                        _errorMessage.value = "Warning: Could not delete old avatar: ${e.message}"
+                    }
+                }
 
-                // Get download URL
+                // Tải ảnh mới lên
+                storageRef.putFile(uri).await()
                 val downloadUrl = storageRef.downloadUrl.await().toString()
 
-                // Update Firestore
+                // Cập nhật Firestore
                 db.collection("users").document(userId)
                     .collection("profile").document("info")
                     .update("avatarUrl", downloadUrl)
                     .await()
 
-                // Update state
+                // Cập nhật trạng thái
                 _user.value = _user.value.copy(avatarUrl = downloadUrl)
-
-                _errorMessage.value = "Avatar updated"
+                _errorMessage.value = "Avatar updated successfully"
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Error uploading avatar"
             } finally {
@@ -115,13 +123,9 @@ class MyAccountViewModel : ViewModel() {
             try {
                 currentUser?.let { user ->
                     val isEmailPasswordUser = user.providerData.any { it.providerId == EmailAuthProvider.PROVIDER_ID }
-                    if (!isEmailPasswordUser) {
-                        _errorMessage.value = "Password change not supported for Google accounts"
-                        return@launch
-                    }
 
-                    // Kiểm tra đầu vào
-                    if (newPassword.isNotEmpty()) {
+                    // Nếu là người dùng email/password và có ý định đổi mật khẩu
+                    if (isEmailPasswordUser && newPassword.isNotEmpty()) {
                         if (newPassword.length < 6) {
                             _errorMessage.value = "Password must be at least 6 characters"
                             return@launch
@@ -143,10 +147,10 @@ class MyAccountViewModel : ViewModel() {
                         user.updatePassword(newPassword).await()
                     }
 
-                    // Cập nhật Firestore
+                    // Cập nhật Firestore (bất kể loại tài khoản nào)
                     db.collection("users").document(user.uid)
                         .collection("profile").document("info")
-                        .set(_user.value)
+                        .set(_user.value) // chứa username, phone mới
                         .await()
 
                     loadUserData()
@@ -164,11 +168,8 @@ class MyAccountViewModel : ViewModel() {
         }
     }
 
+
     fun clearErrorMessage() {
         _errorMessage.value = ""
-    }
-
-    fun logout() {
-        auth.signOut()
     }
 }

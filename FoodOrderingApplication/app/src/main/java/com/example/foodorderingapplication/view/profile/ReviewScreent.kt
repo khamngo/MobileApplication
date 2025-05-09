@@ -99,7 +99,6 @@ fun ReviewScreen(
                     }
                 } else {
                     items(state.foodItems) { foodItem ->
-
                         ProductRatingLayout(
                             foodItem = foodItem,
                             rating = state.ratings[foodItem.id] ?: 0,
@@ -133,14 +132,6 @@ fun ReviewScreen(
                         ) {
                             Text("Submit Review", fontSize = 16.sp, color = Color.White)
                         }
-
-//                        if (state.submitSuccess) {
-//                            Text(
-//                                text = "Thanks for your review!",
-//                                color = Color(0xFF4CAF50),
-//                                modifier = Modifier.padding(top = 8.dp)
-//                            )
-//                        }
                     }
                 }
             }

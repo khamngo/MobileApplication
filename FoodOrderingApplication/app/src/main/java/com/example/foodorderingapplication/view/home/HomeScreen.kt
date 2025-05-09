@@ -50,70 +50,112 @@ import java.util.Calendar
 import android.app.DatePickerDialog
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.view.BottomNavBar
+import com.example.foodorderingapplication.view.menu.FoodItems
+import com.example.foodorderingapplication.view.menu.RestaurantScreen
 import com.example.foodorderingapplication.view.menu.TopBar
-
-val restaurantItems = listOf(
-    RestaurantItem(
-        "KFOODS1 - LANDMARK 81",
-        "720A Điện Biên Phủ, P22, Q. Bình Thạnh, TP HCM",
-        "056 3167 5325",
-        "8:30 AM - 10:00 PM"
-    ),
-    RestaurantItem(
-        "KFOODS2 - BITEXCO",
-        "2 Hải Triều, Quận 1, TP HCM",
-        "056 3428 8245",
-        "9:30 AM - 11:00 PM"
-    )
-)
+import com.example.foodorderingapplication.viewmodel.FoodViewModel
+import com.example.foodorderingapplication.viewmodel.RestaurantViewModel
 
 @Composable
 fun HomeScreen(navController: NavController) {
-    var selectedDate by remember { mutableStateOf("") }
-    var numberOfDinner by remember { mutableIntStateOf(1) }
+    val viewModel: FoodViewModel = viewModel()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Scaffold(bottomBar = { BottomNavBar(navController) }) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .background(Color(0xFFF7F7F7))
-                .verticalScroll(rememberScrollState())
-        ) {
-            TopBar()
-            Column(modifier = Modifier
-                .padding(16.dp)) {
-                DateTimePicker { selectedDate = it }
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
 
-                Spacer(modifier = Modifier.height(16.dp))
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF7F7F7)),
+            ) {
+                item { TopBar() }
 
-                DinnerCounter(numberOfDinner) { numberOfDinner = it }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-//                RestaurantSelectionSection(restaurantItems)
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = { navController.navigate("thanks") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCC00))
-                ) {
-                    Text(
-                        "Confirm",
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                if (searchQuery.isNotBlank() && searchResults.isNotEmpty()) {
+                    items(searchResults) { food ->
+                        FoodItems(food, onClick = {
+                            navController.navigate("food_detail/${food.id}")
+                        })
+                        HorizontalDivider(modifier = Modifier.padding(4.dp))
+                    }
+                } else {
+                    item {
+                        TableSection{
+                            navController.navigate("thanks")
+                        }
+                    }
                 }
             }
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TableSection(onClick:()-> Unit){
+    Column(modifier = Modifier.padding(16.dp)) {
+        val resViewModel: RestaurantViewModel = viewModel()
+        var selectedDate by remember { mutableStateOf("") }
+        var numberOfDinner by remember { mutableIntStateOf(1) }
+        var restaurant by remember { mutableStateOf(RestaurantItem()) }
+        val restaurantItems by resViewModel.restaurantItems.collectAsState()
+
+        LaunchedEffect(restaurantItems) {
+            if (restaurantItems.isNotEmpty()) {
+                restaurant = restaurantItems.first()
+            }
+        }
+
+        DateTimePicker { selectedDate = it }
+        Spacer(modifier = Modifier.height(16.dp))
+        DinnerCounter(numberOfDinner) { numberOfDinner = it }
+        Spacer(modifier = Modifier.height(16.dp))
+        RestaurantScreen(viewModel = resViewModel, selectedRestaurant = restaurant)
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { onClick() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCC00))
+        ) {
+            Text(
+                "Confirm",
+                fontSize = 16.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -150,7 +192,7 @@ fun DateTimePicker(onDateSelected: (String) -> Unit) {
                 },
                 hour,
                 minute,
-                true // is24HourView
+                true
             ).show()
         },
         year,
@@ -202,9 +244,3 @@ fun DinnerCounter(count: Int, onCountChange: (Int) -> Unit) {
     }
 }
 
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    NavigationGraph()
-}

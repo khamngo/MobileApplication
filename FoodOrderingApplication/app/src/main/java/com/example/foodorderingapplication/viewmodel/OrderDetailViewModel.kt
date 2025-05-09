@@ -164,30 +164,28 @@ class OrderDetailViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                val selectedDate = dateFormat.parse(deliveryDate)
-                if (selectedDate != null) {
-                    if (selectedDate.before(Calendar.getInstance().time)) {
-                        throw IllegalArgumentException("Delivery date must be in the future")
-                    }
-                }
                 val order = _orderDetail.value ?: throw IllegalArgumentException("Order not found")
+
                 val newOrder = order.copy(
-                    orderId = db.collection("orders").document().id,
+                    orderId = db.collection("orders").document().id, // tạo ID mới
                     status = OrderStatus.Preparing.name,
                     orderDate = Timestamp.now(),
                     userId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
                     deliveryDate = deliveryDate,
                     deliveryTime = deliveryTime
                 )
+
                 db.collection("orders").document(newOrder.orderId)
                     .set(newOrder)
                     .await()
+
                 _errorMessage.value = "New order created successfully"
+
                 sendNotification(
                     title = "New Order Created",
                     body = "Your new order #${newOrder.orderId} has been placed."
                 )
+
                 onSuccess()
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Error creating new order"
@@ -196,6 +194,7 @@ class OrderDetailViewModel : ViewModel() {
             }
         }
     }
+
 
     // Gửi thông báo qua FCM
     private fun sendNotification(title: String, body: String) {

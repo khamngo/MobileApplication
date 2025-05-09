@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.profile
 
+import android.R.attr.order
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,6 +53,9 @@ import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.ReviewItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.MyReviewViewModel
+import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 @Composable
@@ -180,6 +185,9 @@ fun ReviewItem(
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val formattedDate = SimpleDateFormat("h m a : dd-MM-yyyy", Locale.getDefault())
+        .format(reviewItem.date.toDate())
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -198,6 +206,15 @@ fun ReviewItem(
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = formattedDate,
+            fontSize = 14.sp,
+            color = Color.Gray,
+            fontStyle = FontStyle.Italic
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

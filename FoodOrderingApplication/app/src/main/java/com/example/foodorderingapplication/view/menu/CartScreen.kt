@@ -199,7 +199,6 @@ fun CartItemView(item: CartItem, viewModel: CartViewModel, onClick: () -> Unit) 
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     item.name,

@@ -18,6 +18,7 @@ import com.example.foodorderingapplication.view.home.HomeScreen
 import com.example.foodorderingapplication.view.home.IntroScreen
 import com.example.foodorderingapplication.view.home.SignInScreen
 import com.example.foodorderingapplication.view.home.SignUpScreen
+import com.example.foodorderingapplication.view.home.ThanksScreen
 import com.example.foodorderingapplication.view.menu.AddShippingScreen
 import com.example.foodorderingapplication.view.menu.CartScreen
 import com.example.foodorderingapplication.view.menu.CategoryScreen
@@ -103,6 +104,7 @@ fun NavigationGraph() {
         composable("my_favorite") { FavoriteScreen(navController = navController) }
         composable("thank_you") { ThankYouScreen(navController = navController) }
         composable("about_us") { AboutUsScreen(navController = navController) }
+        composable("thanks") { ThanksScreen(navController = navController) }
         composable("review/{orderId}") { backStackEntry ->
             val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             ReviewScreen(navController = navController, orderId = orderId)

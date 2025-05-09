@@ -35,7 +35,6 @@ class FoodViewModel : ViewModel() {
     private val _dealFoods = MutableStateFlow<List<FoodItem>>(emptyList())
     val dealFoods: StateFlow<List<FoodItem>> = _dealFoods
 
-    // ✅ Thêm searchText và searchResults
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
@@ -43,12 +42,15 @@ class FoodViewModel : ViewModel() {
     val searchResults: StateFlow<List<FoodItem>> = _searchResults
 
     init {
-        fetchFoods(null) // Lấy tất cả món ăn
-        fetchFoods("popular")
-        fetchFoods("bestseller")
-        fetchFoods("deal")
+        viewModelScope.launch {
+            fetchFoods(null)
+            fetchFoods("popular")
+            fetchFoods("bestseller")
+            fetchFoods("deal")
+        }
         observeSearchQuery()
     }
+
 
     fun fetchFoods(tag: String?) {
         val query = if (tag == null) {
@@ -60,12 +62,18 @@ class FoodViewModel : ViewModel() {
         query.addSnapshotListener { snapshot, e ->
             if (e != null) {
                 Log.e("FoodViewModel", "Lỗi khi lấy dữ liệu (tag: $tag): $e")
+                if (tag == null) _isLoading.value = false
+                _isError.value = true
                 return@addSnapshotListener
             }
+
             if (snapshot == null || snapshot.isEmpty) {
                 Log.d("FoodViewModel", "Không có dữ liệu cho tag: $tag")
                 when (tag) {
-                    null -> _exploreFoods.value = emptyList()
+                    null -> {
+                        _exploreFoods.value = emptyList()
+                        _isLoading.value = false
+                    }
                     "popular" -> _popularFoods.value = emptyList()
                     "bestseller" -> _bestsellerFoods.value = emptyList()
                     "deal" -> _dealFoods.value = emptyList()
@@ -87,9 +95,10 @@ class FoodViewModel : ViewModel() {
             }
 
             when (tag) {
-                null ->{
+                null -> {
                     _searchResults.value = foods
                     _exploreFoods.value = foods
+                    _isLoading.value = false // ✅ dữ liệu đã xong, tắt loading
                 }
                 "popular" -> _popularFoods.value = foods
                 "bestseller" -> _bestsellerFoods.value = foods
