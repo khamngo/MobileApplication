@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.admin
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +45,6 @@ import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.ReviewListViewModel
 import java.text.NumberFormat
 import java.util.Locale
-
 
 @Composable
 fun ReviewListScreen(
@@ -97,6 +97,7 @@ fun ReviewListScreen(
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun FoodReviewItemCard(item: FoodItem, onClick: () -> Unit = {}) {
     Row(

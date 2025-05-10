@@ -1,8 +1,6 @@
 package com.example.foodorderingapplication.view.admin
 
-import android.R.attr.onClick
 import android.annotation.SuppressLint
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,12 +23,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -52,32 +46,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.R
+import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.BottomNavBar
-import com.example.foodorderingapplication.model.BottomNavItem
-import com.example.foodorderingapplication.view.menu.FoodItems
 import com.example.foodorderingapplication.view.menu.TopBar
 import com.example.foodorderingapplication.viewmodel.FoodViewModel
 import kotlin.math.roundToInt
 
 @Composable
 fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = viewModel()) {
-    val foodList by viewModel.exploreFoods.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedFoodItemToDelete by remember { mutableStateOf<FoodItem?>(null) }
-    val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
 
     val bottomNavItems = listOf(
@@ -140,7 +128,6 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
             }
         }
     }
-
 }
 
 @SuppressLint("DefaultLocale")

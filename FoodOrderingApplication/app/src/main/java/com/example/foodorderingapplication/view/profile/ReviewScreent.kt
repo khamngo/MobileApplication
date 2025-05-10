@@ -35,13 +35,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.foodorderingapplication.NavigationGraph
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.ReviewViewModel
@@ -70,10 +68,11 @@ fun ReviewScreen(
         }
     }
 
-
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.White)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         HeaderSection("Review Order") {
             viewModel.resetState()
             navController.popBackStack()
@@ -152,7 +151,6 @@ fun ProductRatingLayout(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-
         // Food Item Info
         Row(
             modifier = Modifier.fillMaxWidth(),

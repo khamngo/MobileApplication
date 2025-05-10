@@ -1,6 +1,5 @@
 package com.example.foodorderingapplication.viewmodel
 
-import android.R.attr.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.ReviewItem
@@ -12,8 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class MyReviewViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()

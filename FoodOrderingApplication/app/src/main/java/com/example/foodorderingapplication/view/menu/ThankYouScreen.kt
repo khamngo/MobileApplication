@@ -38,7 +38,7 @@ fun ThankYouScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f), // Để đẩy button xuống
+                .weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

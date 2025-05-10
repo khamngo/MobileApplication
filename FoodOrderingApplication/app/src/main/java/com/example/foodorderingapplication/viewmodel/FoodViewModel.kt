@@ -61,14 +61,14 @@ class FoodViewModel : ViewModel() {
 
         query.addSnapshotListener { snapshot, e ->
             if (e != null) {
-                Log.e("FoodViewModel", "Lỗi khi lấy dữ liệu (tag: $tag): $e")
+                Log.e("FoodViewModel", "Error while retrieving data (tag: $tag): $e")
                 if (tag == null) _isLoading.value = false
                 _isError.value = true
                 return@addSnapshotListener
             }
 
             if (snapshot == null || snapshot.isEmpty) {
-                Log.d("FoodViewModel", "Không có dữ liệu cho tag: $tag")
+                Log.d("FoodViewModel", "No data for tag: $tag")
                 when (tag) {
                     null -> {
                         _exploreFoods.value = emptyList()
@@ -98,7 +98,7 @@ class FoodViewModel : ViewModel() {
                 null -> {
                     _searchResults.value = foods
                     _exploreFoods.value = foods
-                    _isLoading.value = false // ✅ dữ liệu đã xong, tắt loading
+                    _isLoading.value = false
                 }
                 "popular" -> _popularFoods.value = foods
                 "bestseller" -> _bestsellerFoods.value = foods
@@ -126,7 +126,7 @@ class FoodViewModel : ViewModel() {
     private fun observeSearchQuery() {
         viewModelScope.launch {
             _searchQuery
-                .debounce(500) // 300ms debounce
+                .debounce(500)
                 .distinctUntilChanged()
                 .collectLatest { query ->
                     if (query.isBlank()) {

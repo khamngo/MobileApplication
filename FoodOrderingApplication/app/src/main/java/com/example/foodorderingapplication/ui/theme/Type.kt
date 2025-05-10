@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.sp
 import com.example.foodorderingapplication.R
 
 val MograFont = FontFamily(
-    Font(R.font.mogra_regular) // Tham chiếu đến tệp font đã thêm vào res/font/
+    Font(R.font.mogra_regular)
 )
 
 // Set of Material typography styles to start with

@@ -1,12 +1,12 @@
 package com.example.foodorderingapplication.viewmodel
 
-import android.R.attr.order
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.CartItem
+import com.example.foodorderingapplication.model.NotificationItem
 import com.example.foodorderingapplication.model.OrderItem
 import com.example.foodorderingapplication.model.RestaurantItem
 import com.example.foodorderingapplication.model.ShippingAddress
@@ -30,6 +30,7 @@ import okhttp3.RequestBody
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToInt
@@ -95,10 +96,6 @@ class CheckoutViewModel : ViewModel() {
 
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
-
-    private val client = OkHttpClient()
-    private val fcmApiUrl = "https://fcm.googleapis.com/v1/projects/your-project-id/messages:send"
-    private val serverKey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCrJGym4mcmqyWd" // Thay bằng Server Key từ
 
     init {
         loadCartItems()
@@ -252,7 +249,7 @@ class CheckoutViewModel : ViewModel() {
         viewModelScope.launch {
             _isPlacingOrder.value = true
             try {
-                delay(2000) // Giả lập xử lý
+                delay(2000)
                 db.collection("orders").document(orderId)
                     .set(orderItem)
                     .addOnSuccessListener {
@@ -262,10 +259,7 @@ class CheckoutViewModel : ViewModel() {
                     .addOnFailureListener { e ->
                         _errorMessage.value = "Error when ordering: $e"
                     }
-                sendNotification(
-                    title = "Order Cancelled",
-                    body = "Your order #${orderId} has been cancelled."
-                )
+                sendNotification("Order Placed", "Your order #${orderId.takeLast(5)} has been placed successfully!",orderId)
             } catch (e: Exception) {
                 _errorMessage.value = "Error placing order: $e"
             } finally {
@@ -297,61 +291,39 @@ class CheckoutViewModel : ViewModel() {
         }
     }
 
-    private fun sendNotification(title: String, body: String) {
+    private fun sendNotification(title: String, body: String, orderId: String) {
         viewModelScope.launch {
             try {
-                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: throw Exception("User not logged in")
-                // Lưu vào Firestore
+                val userId = auth.currentUser?.uid ?: throw Exception("User not logged in")
+                val notificationId = UUID.randomUUID().toString()
+                val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val time = timeFormatter.format(Date())
+
+                val notification = NotificationItem(
+                    id = notificationId,
+                    title = title,
+                    message = body,
+                    orderId = orderId,
+                    timestamp = Timestamp.now(),
+                    isRead = false,
+                    type = "order", // Có thể tùy chỉnh loại thông báo
+                    time = time,
+                    dotColor = Color.Blue
+                )
+
+                // Lưu NotificationItem vào Firestore
                 db.collection("users")
                     .document(userId)
                     .collection("notifications")
-                    .add(
-                        mapOf(
-                            "title" to title,
-                            "body" to body,
-                            "timestamp" to Timestamp.now()
-                        )
-                    ).await()
+                    .document(notificationId)
+                    .set(notification)
+                    .await()
 
-                // Gửi thông báo qua FCM
-                val message = JSONObject().apply {
-                    put("message", JSONObject().apply {
-                        put("token", getDeviceToken(userId)) // Hoặc dùng topic "/topics/user_$userId"
-                        put("notification", JSONObject().apply {
-                            put("title", title)
-                            put("body", body)
-                        })
-                        put("android", JSONObject().apply {
-                            put("priority", "high")
-                        })
-                    })
-                }
-
-                val requestBody = RequestBody.create(
-                    "application/json; charset=utf-8".toMediaType(),
-                    message.toString()
-                )
-                val request = Request.Builder()
-                    .url(fcmApiUrl)
-                    .post(requestBody)
-                    .addHeader("Authorization", "Bearer $serverKey")
-                    .addHeader("Content-Type", "application/json")
-                    .build()
-
-                val response = client.newCall(request).execute()
-                if (!response.isSuccessful) {
-                    throw Exception("FCM request failed: ${response.body?.string()}")
-                }
-                println("FCM sent successfully: $message")
+                println("Notification saved: $notification")
             } catch (e: Exception) {
                 _errorMessage.value = "Error sending notification: ${e.message}"
             }
         }
     }
 
-    private suspend fun getDeviceToken(userId: String): String {
-        // Giả lập lấy token từ Firestore hoặc FirebaseMessaging
-        return FirebaseMessaging.getInstance().token.await() // Lấy token của thiết bị hiện tại
-        // Hoặc lấy từ Firestore: db.collection("users").document(userId).get().await().getString("fcmToken") ?: ""
-    }
 }

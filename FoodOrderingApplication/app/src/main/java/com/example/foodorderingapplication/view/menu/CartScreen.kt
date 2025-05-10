@@ -1,11 +1,8 @@
 package com.example.foodorderingapplication.view.menu
 
-import android.R.attr.onClick
-import android.R.attr.textStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,12 +31,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -66,7 +59,6 @@ import coil.compose.AsyncImage
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.model.CartItem
-import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.SubtotalAndButton
 import com.example.foodorderingapplication.viewmodel.CartViewModel
@@ -81,7 +73,7 @@ fun CartScreen(
     val cartItems by viewModel.cartItemItems.collectAsState()
     val total by viewModel.total.collectAsState()
     val foodItems by foodViewModel.popularFoods.collectAsState()
-    val foodPrice = foodItems
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -353,6 +345,4 @@ fun InstructionInput(
         }
     )
 }
-
-
 

@@ -37,15 +37,15 @@ fun EditReviewScreen(
     viewModel: EditReviewViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-val context = LocalContext.current
+    val context = LocalContext.current
+
     LaunchedEffect(reviewId) {
         viewModel.fetchReview(reviewId)
     }
 
-
     LaunchedEffect(state.submitSuccess) {
         if (state.submitSuccess) {
-            Toast.makeText(context, "Đánh giá đã được cập nhật!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Review has been updated!", Toast.LENGTH_SHORT).show()
             delay(500)
 
             // Truyền cờ refresh về màn trước
@@ -58,10 +58,11 @@ val context = LocalContext.current
         }
     }
 
-
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.White)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         HeaderSection("Edit Review") {
             viewModel.resetState()
             navController.popBackStack()
@@ -94,7 +95,7 @@ val context = LocalContext.current
 
                     if (state.showError) {
                         Text(
-                            text = "Vui lòng chọn số sao và nhập đánh giá!",
+                            text = "Please select stars and enter review!",
                             color = Color.Red,
                             modifier = Modifier.padding(top = 8.dp)
                         )
@@ -119,7 +120,7 @@ val context = LocalContext.current
 
 //                    if (state.submitSuccess) {
 //                        Text(
-//                            text = "Đánh giá đã được cập nhật!",
+//                            text = "Review has been updated!",
 //                            color = Color(0xFF4CAF50),
 //                            modifier = Modifier.padding(top = 8.dp)
 //                        )

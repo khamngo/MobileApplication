@@ -12,7 +12,6 @@ import kotlinx.coroutines.tasks.await
 import java.text.NumberFormat
 import java.util.Locale
 
-
 class ReviewListViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
 

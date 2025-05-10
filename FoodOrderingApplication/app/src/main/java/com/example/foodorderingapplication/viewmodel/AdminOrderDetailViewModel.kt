@@ -1,14 +1,16 @@
 package com.example.foodorderingapplication.viewmodel
 
-import android.util.Log
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.CartItem
+import com.example.foodorderingapplication.model.NotificationItem
 import com.example.foodorderingapplication.model.OrderItem
 import com.example.foodorderingapplication.model.OrderStatus
 import com.example.foodorderingapplication.model.RestaurantItem
 import com.example.foodorderingapplication.model.ShippingAddress
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,11 +19,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 class AdminOrderDetailViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
-    private val messaging = FirebaseMessaging.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     private val _orderDetail = MutableStateFlow<OrderItem?>(null)
     val orderDetail: StateFlow<OrderItem?> = _orderDetail.asStateFlow()
@@ -58,12 +62,15 @@ class AdminOrderDetailViewModel : ViewModel() {
                                 )
                             } ?: emptyList()
 
-                            val shippingAddressData = data?.get("shippingAddress") as? Map<String, Any>
-                            val restaurantData = shippingAddressData?.get("restaurant") as? Map<String, Any>
+                            val shippingAddressData =
+                                data?.get("shippingAddress") as? Map<String, Any>
+                            val restaurantData =
+                                shippingAddressData?.get("restaurant") as? Map<String, Any>
                             val shippingAddress = ShippingAddress(
                                 firstName = shippingAddressData?.get("firstName") as? String ?: "",
                                 lastName = shippingAddressData?.get("lastName") as? String ?: "",
-                                phoneNumber = shippingAddressData?.get("phoneNumber") as? String ?: "",
+                                phoneNumber = shippingAddressData?.get("phoneNumber") as? String
+                                    ?: "",
                                 province = shippingAddressData?.get("province") as? String ?: "",
                                 district = shippingAddressData?.get("district") as? String ?: "",
                                 ward = shippingAddressData?.get("ward") as? String ?: "",
@@ -74,19 +81,16 @@ class AdminOrderDetailViewModel : ViewModel() {
                                     phone = restaurantData?.get("phone") as? String ?: "",
                                     hours = restaurantData?.get("hours") as? String ?: ""
                                 ),
-                                isDefault = shippingAddressData?.get("isDefault") as? Boolean ?: false
+                                isDefault = shippingAddressData?.get("isDefault") as? Boolean
+                                    ?: false
                             )
-
-                            val orderDateTimestamp = data?.get("orderDate") as? Timestamp
-                            val orderDate = orderDateTimestamp?.toDate()?.let {
-                                SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)
-                            } ?: ""
 
                             _orderDetail.value = OrderItem(
                                 userId = data?.get("userId") as? String ?: "",
                                 items = items,
                                 subtotal = (data?.get("subtotal") as? Number)?.toDouble() ?: 0.0,
-                                shippingFee = (data?.get("shippingFee") as? Number)?.toDouble() ?: 0.0,
+                                shippingFee = (data?.get("shippingFee") as? Number)?.toDouble()
+                                    ?: 0.0,
                                 taxes = (data?.get("taxes") as? Number)?.toDouble() ?: 0.0,
                                 discount = (data?.get("discount") as? Number)?.toDouble() ?: 0.0,
                                 total = (data?.get("total") as? Number)?.toDouble() ?: 0.0,
@@ -124,9 +128,9 @@ class AdminOrderDetailViewModel : ViewModel() {
                     .await()
                 _errorMessage.value = "Order accepted successfully"
                 sendNotification(
-                    to = "/topics/user_${order.userId}",
                     title = "Order Accepted",
-                    body = "Your order #${order.orderId} has been accepted and is being shipped."
+                    body = "Your order #${order.orderId.takeLast(5)} has been accepted and is being shipped.",
+                    orderId = orderId
                 )
                 onSuccess()
             } catch (e: Exception) {
@@ -150,9 +154,9 @@ class AdminOrderDetailViewModel : ViewModel() {
                     .await()
                 _errorMessage.value = "Order cancelled successfully"
                 sendNotification(
-                    to = "/topics/user_${order.userId}",
                     title = "Order Cancelled",
-                    body = "Your order #${order.orderId} has been cancelled."
+                    body = "Your order #${order.orderId.takeLast(5)} has been cancelled.",
+                    orderId = orderId
                 )
                 onSuccess()
             } catch (e: Exception) {
@@ -163,7 +167,12 @@ class AdminOrderDetailViewModel : ViewModel() {
         }
     }
 
-    fun buyAgain(orderId: String, deliveryDate: String, deliveryTime: String, onSuccess: () -> Unit) {
+    fun buyAgain(
+        orderId: String,
+        deliveryDate: String,
+        deliveryTime: String,
+        onSuccess: () -> Unit
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -180,9 +189,9 @@ class AdminOrderDetailViewModel : ViewModel() {
                     .await()
                 _errorMessage.value = "New order created successfully"
                 sendNotification(
-                    to = "/topics/user_${order.userId}",
                     title = "New Order Created",
-                    body = "Your new order #${newOrder.orderId} has been placed."
+                    body = "Your new order #${newOrder.orderId.takeLast(5)} has been placed.",
+                    orderId = orderId
                 )
                 onSuccess()
             } catch (e: Exception) {
@@ -193,18 +202,35 @@ class AdminOrderDetailViewModel : ViewModel() {
         }
     }
 
-    private fun sendNotification(to: String, title: String, body: String) {
+    private fun sendNotification(title: String, body: String, orderId: String) {
         viewModelScope.launch {
             try {
-                val message = mapOf(
-                    "to" to to,
-                    "notification" to mapOf(
-                        "title" to title,
-                        "body" to body
-                    )
+                val userId = auth.currentUser?.uid ?: throw Exception("User not logged in")
+                val notificationId = UUID.randomUUID().toString()
+                val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val time = timeFormatter.format(Date())
+
+                val notification = NotificationItem(
+                    id = notificationId,
+                    title = title,
+                    message = body,
+                    orderId = orderId,
+                    timestamp = Timestamp.now(),
+                    isRead = false,
+                    type = "order",
+                    time = time,
+                    dotColor = Color.Blue
                 )
-                // Giả lập gửi FCM (yêu cầu server-side implementation)
-                println("Sending FCM: $message")
+
+                // Lưu NotificationItem vào Firestore
+                db.collection("users")
+                    .document(userId)
+                    .collection("notifications")
+                    .document(notificationId)
+                    .set(notification)
+                    .await()
+
+                println("Notification saved: $notification")
             } catch (e: Exception) {
                 _errorMessage.value = "Error sending notification: ${e.message}"
             }

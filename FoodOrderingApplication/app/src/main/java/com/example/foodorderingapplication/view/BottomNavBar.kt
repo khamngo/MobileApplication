@@ -48,7 +48,7 @@ fun BottomNavBar(navController: NavController, items: List<BottomNavItem> = list
                         item.title,
                         fontSize = fontSize,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis // Nếu vẫn dài quá, sẽ thêm "..."
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 selected = selectedItem == index,

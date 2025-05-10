@@ -106,7 +106,6 @@ fun RevenueScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    // Sử dụng LazyColumn làm container chính để hỗ trợ cuộn
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -206,7 +205,7 @@ fun RevenueScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    CategoryRevenueSection(categoryRevenue)
+//                    CategoryRevenueSection(categoryRevenue)
                 }
             }
         }
@@ -215,17 +214,23 @@ fun RevenueScreen(
 
 @Composable
 fun RevenueSummary(totalOrders: Int, totalRevenue: Double, bestSelling: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-           ,
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        CardInfo(title = "Total Orders", value = "$totalOrders")
-        CardInfo(title = "Best-selling", value = bestSelling)
-        CardInfo(title = "Total Revenue", value = "$${DecimalFormat("#,###").format(totalRevenue)}")
-    }
+   Column(   horizontalAlignment = Alignment.CenterHorizontally,        modifier = Modifier
+       .fillMaxWidth()
+) {
+       Row(
+           modifier = Modifier
+               .fillMaxWidth(),
+           horizontalArrangement = Arrangement.SpaceEvenly,
+           verticalAlignment = Alignment.CenterVertically
+       ) {
+           CardInfo(title = "Total Orders", value = "$totalOrders")
+           CardInfo(
+               title = "Total Revenue",
+               value = "$${DecimalFormat("#,###").format(totalRevenue)}"
+           )
+       }
+       CardInfo(title = "Best-selling", value = bestSelling)
+   }
 }
 
 @Composable

@@ -49,7 +49,6 @@ fun AboutUsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Column(modifier = Modifier.padding(16.dp)) {
-            // Content
             Text(
                 text = "Welcome to Foodies, your ultimate food companion!",
                 style = MaterialTheme.typography.headlineSmall,

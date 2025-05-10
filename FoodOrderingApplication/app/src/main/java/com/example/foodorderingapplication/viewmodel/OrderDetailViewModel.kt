@@ -1,9 +1,11 @@
 package com.example.foodorderingapplication.viewmodel
 
+import androidx.compose.ui.graphics.Color
 import com.google.firebase.auth.FirebaseAuth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.CartItem
+import com.example.foodorderingapplication.model.NotificationItem
 import com.example.foodorderingapplication.model.OrderItem
 import com.example.foodorderingapplication.model.OrderStatus
 import com.example.foodorderingapplication.model.RestaurantItem
@@ -17,7 +19,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 class OrderDetailViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -148,7 +152,8 @@ class OrderDetailViewModel : ViewModel() {
                 _errorMessage.value = "Order cancelled successfully"
                 sendNotification(
                     title = "Order Cancelled",
-                    body = "Your order #${order.orderId} has been cancelled."
+                    body = "Your order #${order.orderId.takeLast(5)} has been cancelled.",
+                    orderId = orderId
                 )
                 onConfirm()
             } catch (e: Exception) {
@@ -183,7 +188,8 @@ class OrderDetailViewModel : ViewModel() {
 
                 sendNotification(
                     title = "New Order Created",
-                    body = "Your new order #${newOrder.orderId} has been placed."
+                    body = "Your new order #${newOrder.orderId.takeLast(5)} has been placed.",
+                    orderId = newOrder.orderId
                 )
 
                 onSuccess()
@@ -195,30 +201,37 @@ class OrderDetailViewModel : ViewModel() {
         }
     }
 
-
     // Gửi thông báo qua FCM
-    private fun sendNotification(title: String, body: String) {
+
+    private fun sendNotification(title: String, body: String, orderId: String) {
         viewModelScope.launch {
             try {
-                val message = mapOf(
-                    "to" to "/topics/user_${FirebaseAuth.getInstance().currentUser?.uid}",
-                    "notification" to mapOf(
-                        "title" to title,
-                        "body" to body
-                    )
+                val userId = auth.currentUser?.uid ?: throw Exception("User not logged in")
+                val notificationId = UUID.randomUUID().toString()
+                val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val time = timeFormatter.format(Date())
+
+                val notification = NotificationItem(
+                    id = notificationId,
+                    title = title,
+                    message = body,
+                    orderId = orderId,
+                    timestamp = Timestamp.now(),
+                    isRead = false,
+                    type = "order", // Có thể tùy chỉnh loại thông báo
+                    time = time,
+                    dotColor = Color.Blue
                 )
-                // Lưu vào Firestore
+
+                // Lưu NotificationItem vào Firestore
                 db.collection("users")
-                    .document(FirebaseAuth.getInstance().currentUser?.uid ?: "")
+                    .document(userId)
                     .collection("notifications")
-                    .add(
-                        mapOf(
-                            "title" to title,
-                            "body" to body,
-                            "timestamp" to Timestamp.now()
-                        )
-                    ).await()
-                println("Sending FCM: $message")
+                    .document(notificationId)
+                    .set(notification)
+                    .await()
+
+                println("Notification saved: $notification")
             } catch (e: Exception) {
                 _errorMessage.value = "Error sending notification: ${e.message}"
             }

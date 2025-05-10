@@ -71,8 +71,8 @@ class CartViewModel : ViewModel() {
         db.collection("carts").document(userId)
             .collection("items").document(cartItem.foodId)
             .set(cartItemData)
-            .addOnSuccessListener { println("Đã thêm vào giỏ hàng!") }
-            .addOnFailureListener { e -> println("Lỗi khi thêm vào giỏ hàng: $e") }
+            .addOnSuccessListener { println("Added to cart!") }
+            .addOnFailureListener { e -> println("Error adding to cart: $e") }
     }
 
     fun increaseQuantity(foodId: String) {
@@ -94,8 +94,8 @@ class CartViewModel : ViewModel() {
         db.collection("carts").document(userId)
             .collection("items").document(foodId)
             .update("quantity", quantity)
-            .addOnSuccessListener { println("Đã cập nhật số lượng") }
-            .addOnFailureListener { e -> println("Lỗi khi cập nhật số lượng: $e") }
+            .addOnSuccessListener { println("Quantity updated") }
+            .addOnFailureListener { e -> println("Error updating quantity: $e") }
     }
 
     fun removeFromCart(foodId: String) {
@@ -104,8 +104,8 @@ class CartViewModel : ViewModel() {
         db.collection("carts").document(userId)
             .collection("items").document(foodId)
             .delete()
-            .addOnSuccessListener { println("Đã xóa món khỏi giỏ hàng!") }
-            .addOnFailureListener { e -> println("Lỗi khi xóa món: $e") }
+            .addOnSuccessListener { println("Item removed from cart!") }
+            .addOnFailureListener { e -> println("Error while deleting item: $e") }
     }
 
     private fun calculateTotal(items: List<CartItem>) {
@@ -133,7 +133,7 @@ class CartViewModel : ViewModel() {
         db.collection("carts").document(userId)
             .collection("items").document(foodId)
             .update("instructions", instructions)
-            .addOnSuccessListener { println("Đã cập nhật instructions") }
-            .addOnFailureListener { e -> println("Lỗi khi cập nhật instructions: $e") }
+            .addOnSuccessListener { println("Updated instructions") }
+            .addOnFailureListener { e -> println("Error updating instructions: $e") }
     }
 }

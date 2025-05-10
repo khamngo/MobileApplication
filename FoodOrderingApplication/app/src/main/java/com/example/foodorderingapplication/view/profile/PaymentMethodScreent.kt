@@ -1,6 +1,5 @@
 package com.example.foodorderingapplication.view.profile
 
-import android.R.attr.password
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,14 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.foodorderingapplication.NavigationGraph
-import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.admin.CustomTextField
 
@@ -154,14 +149,13 @@ fun BankCardItem(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 🔶 Chip icon + số cuối thẻ
+                //  Chip icon + số cuối thẻ
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Icon(
                         imageVector = Icons.Default.CreditCard,
-//                        painter = painterResource(id = R.drawable.ic_chip),
                         contentDescription = "Chip Icon",
                         tint = Color.Yellow,
                         modifier = Modifier.size(36.dp)
@@ -177,7 +171,7 @@ fun BankCardItem(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // 🔶 Tên chủ thẻ + ngày hết hạn + loại thẻ
+                // Tên chủ thẻ + ngày hết hạn + loại thẻ
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -213,7 +207,7 @@ fun BankCardItem(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 🔶 Loại thẻ (Visa/Mastercard)
+                // Loại thẻ (Visa/Mastercard)
                 Text(
                     text = cardType.uppercase(),
                     color = Color.White,

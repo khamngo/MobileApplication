@@ -59,7 +59,6 @@ class FavoriteViewModel : ViewModel() {
         val currentIds = favoriteFoodIds.value
 
         if (currentIds.contains(foodItem.id)) {
-            // Đã yêu thích → Xoá
             favRef.whereEqualTo("userId", userId)
                 .whereEqualTo("foodId", foodItem.id)
                 .get()

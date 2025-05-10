@@ -1,6 +1,5 @@
 package com.example.foodorderingapplication.view.home
 
-import android.R.attr.password
 import android.app.Activity
 import android.content.Intent
 import android.widget.Toast
@@ -63,8 +62,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.foodorderingapplication.AdminActivity
 import com.example.foodorderingapplication.R
-import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.auth.createGoogleSignInClient
+import com.example.foodorderingapplication.model.BottomNavItem
 import com.example.foodorderingapplication.ui.theme.MograFont
 import com.example.foodorderingapplication.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -299,7 +298,7 @@ fun SignUpPrompt(
         pushStringAnnotation(tag = "SIGN_UP", annotation = "sign_up")
         withStyle(
             style = SpanStyle(
-                color = Color(0xFFFFC107), // Màu vàng như hình
+                color = Color(0xFFFFC107),
                 fontWeight = FontWeight.Bold
             )
         ) {

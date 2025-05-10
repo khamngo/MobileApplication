@@ -1,9 +1,5 @@
 package com.example.foodorderingapplication.viewmodel
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FoodItem
@@ -15,7 +11,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
 
 class FoodDetailViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -55,7 +50,6 @@ class FoodDetailViewModel : ViewModel() {
     private val _subtotal = MutableStateFlow(0.0)
     val subtotal: StateFlow<Double> = _subtotal
 
-    // Combine để tính subtotal
     init {
         viewModelScope.launch {
             combine(foodDetail, _selectedPortion, _quantity, _selectedDrink) { food, portion, qty, drink ->

@@ -58,27 +58,7 @@ fun UserManagementScreen(
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                    Text(
-                        text = "User Management",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                IconButton(onClick = { userViewModel.fetchUsers() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                }
-            }
+            HeaderSection("User Management") { navController.popBackStack() }
         }
     ) { padding ->
         Column(
@@ -139,7 +119,11 @@ fun UserManagementScreen(
                                     Spacer(modifier = Modifier.weight(1f))
                                     Button(
                                         onClick = { editingUser = user },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(
+                                                0xFFFFD700
+                                            )
+                                        )
                                     ) {
                                         Text("Edit", color = Color.White)
                                     }

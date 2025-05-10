@@ -1,6 +1,5 @@
 package com.example.foodorderingapplication.viewmodel
 
-import android.R.attr.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FoodItem

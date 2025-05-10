@@ -1,8 +1,6 @@
 package com.example.foodorderingapplication.view.profile
 
-import android.app.TimePickerDialog
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -23,16 +21,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,9 +53,6 @@ import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.view.admin.DeliveryStatusSection
 import com.example.foodorderingapplication.view.admin.InfoRow
 import com.example.foodorderingapplication.viewmodel.OrderDetailViewModel
-import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.timepicker.MaterialTimePicker
-import com.google.android.material.timepicker.TimeFormat
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -106,7 +96,6 @@ fun OrderDetailScreen(
             }
         )
     }
-
 
     Box(
         modifier = Modifier
@@ -280,7 +269,6 @@ fun OrderDetailContent(order: OrderItem) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text("Order detail", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-//        Spacer(modifier = Modifier.height(8.dp))
         order.items.forEach { item ->
             Row(
                 verticalAlignment = Alignment.Top,

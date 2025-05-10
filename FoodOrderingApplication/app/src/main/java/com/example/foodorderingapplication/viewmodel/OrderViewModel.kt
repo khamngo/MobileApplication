@@ -1,24 +1,15 @@
 package com.example.foodorderingapplication.viewmodel
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.example.foodorderingapplication.model.OrderStatus
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.model.OrderItem
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import kotlin.jvm.java
 
 class OrderViewModel : ViewModel() {
     private val _orders = MutableStateFlow<List<OrderItem>>(emptyList())

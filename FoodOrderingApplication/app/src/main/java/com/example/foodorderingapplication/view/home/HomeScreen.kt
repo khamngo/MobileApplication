@@ -170,13 +170,12 @@ fun DateTimePicker(onDateSelected: (String) -> Unit) {
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
     val minute = calendar.get(Calendar.MINUTE)
 
-    var selectedDateTime by remember { mutableStateOf("") } // Lưu ngày + giờ được chọn
+    var selectedDateTime by remember { mutableStateOf("") }
 
     // Date Picker Dialog
     val datePickerDialog = DatePickerDialog(
         context,
         { _, selectedYear, selectedMonth, selectedDay ->
-            // Khi đã chọn ngày, mở TimePicker
             TimePickerDialog(
                 context,
                 { _, selectedHour, selectedMinute ->

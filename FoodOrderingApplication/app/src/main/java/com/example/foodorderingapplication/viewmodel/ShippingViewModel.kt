@@ -165,14 +165,13 @@ class ShippingViewModel : ViewModel() {
             "isDefault" to _shippingAddress.value.isDefault
         )
 
-
         viewModelScope.launch {
             db.collection("users").document(userId)
                 .collection("shippingAddress").document("default")
                 .set(addressData)
                 .addOnSuccessListener {
                     _errorMessage.value = null
-                    _fieldErrors.value = FieldErrors() // Xóa lỗi
+                    _fieldErrors.value = FieldErrors()
                     onSuccess()
                 }
                 .addOnFailureListener { e ->

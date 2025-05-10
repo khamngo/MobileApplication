@@ -90,11 +90,12 @@ fun MyAccountScreen(
     }
 
     // Launcher để chọn ảnh từ thư viện
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            viewModel.uploadAvatarImage(uri, context)
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                viewModel.uploadAvatarImage(uri, context)
+            }
         }
-    }
 
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }

@@ -1,6 +1,5 @@
 package com.example.foodorderingapplication.viewmodel
 
-import android.R.attr.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.ReviewItem
@@ -53,8 +52,6 @@ class ReviewDetailViewModel : ViewModel() {
                         val userId = doc.getString("userId") ?: ""
                         val userProfile = db.collection("users").document(userId).collection("profile").document("info").get().await()
                         val reviewer = userProfile.getString("username") ?: "Anonymous"
-                        val timestamp = doc.getTimestamp("timestamp")
-                        val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
                         ReviewItem(
                             reviewId = doc.id,
                             foodId = foodId,

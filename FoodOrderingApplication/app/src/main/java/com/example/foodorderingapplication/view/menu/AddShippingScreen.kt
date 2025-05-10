@@ -185,7 +185,6 @@ fun AddShippingScreen(
             }
         )
 
-
         // Checkbox
         DefaultAccountCheckbox(isDefault, onCheckedChange = {
             isDefault = it
@@ -394,7 +393,6 @@ fun RestaurantSelectionSection(
     selectedRestaurant: RestaurantItem,
     viewModel: ShippingViewModel = viewModel()
 ) {
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier

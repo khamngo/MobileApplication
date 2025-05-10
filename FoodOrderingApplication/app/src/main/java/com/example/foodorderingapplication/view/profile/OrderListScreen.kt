@@ -1,8 +1,5 @@
 package com.example.foodorderingapplication.view.profile
 
-import android.R.attr.onClick
-import android.R.attr.order
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,13 +40,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.util.CoilUtils.result
 import com.example.foodorderingapplication.model.FoodItem
 import com.example.foodorderingapplication.model.OrderItem
-import com.example.foodorderingapplication.model.OrderStatus
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.OrderViewModel
-import com.google.common.math.LinearTransformation.horizontal
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -61,9 +55,12 @@ fun OrderListScreen(navController: NavController, orderViewModel: OrderViewModel
         orderViewModel.fetchUserOrders()
         orderViewModel.fetchRecentOrders()
     }
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(WindowInsets.systemBars.asPaddingValues())) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(WindowInsets.systemBars.asPaddingValues())
+    ) {
         HeaderSection("My Orders") {
             navController.popBackStack()
         }
@@ -186,7 +183,8 @@ fun RecentOrderCard(food: FoodItem, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .width(160.dp)
-            .wrapContentHeight().padding(horizontal = 4.dp)
+            .wrapContentHeight()
+            .padding(horizontal = 4.dp)
     ) {
         AsyncImage(
             model = food.imageUrl,
@@ -214,5 +212,4 @@ fun RecentOrderCard(food: FoodItem, onClick: () -> Unit) {
         )
     }
 }
-
 

@@ -8,5 +8,5 @@ data class FieldErrors(
     val streetError: Boolean = false,
     val districtError: Boolean = false,
     val wardError: Boolean = false,
-    val phoneNumberInvalid: Boolean = false // Lỗi riêng cho định dạng số điện thoại
+    val phoneNumberInvalid: Boolean = false
 )

@@ -1,6 +1,6 @@
 package com.example.foodorderingapplication.view.profile
 
-import android.R.attr.order
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -53,10 +53,8 @@ import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.ReviewItem
 import com.example.foodorderingapplication.view.HeaderSection
 import com.example.foodorderingapplication.viewmodel.MyReviewViewModel
-import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
-
 
 @Composable
 fun MyReviewScreen(
@@ -74,9 +72,11 @@ fun MyReviewScreen(
             savedStateHandle.remove<Boolean>("shouldRefresh")
         }
     }
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.White)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         HeaderSection("My Reviews") {
             navController.popBackStack()
         }
@@ -101,7 +101,7 @@ fun MyReviewScreen(
                         foodName = review.foodName,
                         imageUrl = review.imageUrl,
                         description = review.description,
-                        averageRating = review.rating.toFloat() // Giả sử rating trung bình bằng rating cá nhân
+                        averageRating = review.rating.toFloat()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     ReviewItem(
@@ -116,6 +116,7 @@ fun MyReviewScreen(
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun HeaderReviewSection(
     foodName: String,
@@ -123,9 +124,11 @@ fun HeaderReviewSection(
     description: String,
     averageRating: Float
 ) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+    ) {
         // Image + Title
         AsyncImage(
             model = imageUrl,

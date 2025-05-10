@@ -1,7 +1,6 @@
 package com.example.foodorderingapplication.viewmodel
 
 import android.util.Patterns
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.UserItem
@@ -29,20 +28,31 @@ class AuthViewModel : ViewModel() {
     private val _password = MutableStateFlow("")
     private val _confirmPassword = MutableStateFlow("")
 
-    // Public StateFlow (đọc-only cho UI)
     val username: StateFlow<String> = _username.asStateFlow()
     val email: StateFlow<String> = _email.asStateFlow()
     val phone: StateFlow<String> = _phone.asStateFlow()
     val password: StateFlow<String> = _password.asStateFlow()
     val confirmPassword: StateFlow<String> = _confirmPassword.asStateFlow()
 
-    // Hàm cập nhật dữ liệu
-    fun onUsernameChange(value: String) { _username.value = value }
-    fun onEmailChange(value: String) { _email.value = value }
-    fun onPhoneChange(value: String) { _phone.value = value }
-    fun onPasswordChange(value: String) { _password.value = value }
-    fun onConfirmPasswordChange(value: String) { _confirmPassword.value = value }
+    fun onUsernameChange(value: String) {
+        _username.value = value
+    }
 
+    fun onEmailChange(value: String) {
+        _email.value = value
+    }
+
+    fun onPhoneChange(value: String) {
+        _phone.value = value
+    }
+
+    fun onPasswordChange(value: String) {
+        _password.value = value
+    }
+
+    fun onConfirmPasswordChange(value: String) {
+        _confirmPassword.value = value
+    }
 
     private val _createAccountSuccess = MutableStateFlow(false)
     val createAccountSuccess: StateFlow<Boolean> = _createAccountSuccess.asStateFlow()
@@ -117,9 +127,13 @@ class AuthViewModel : ViewModel() {
                 when {
                     username.isBlank() -> throw IllegalArgumentException("Username cannot be empty")
                     email.isBlank() -> throw IllegalArgumentException("Email cannot be empty")
-                    !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> throw IllegalArgumentException("Invalid email format")
+                    !Patterns.EMAIL_ADDRESS.matcher(email)
+                        .matches() -> throw IllegalArgumentException("Invalid email format")
+
                     phone.isBlank() -> throw IllegalArgumentException("Phone cannot be empty")
-                    !Patterns.PHONE.matcher(phone).matches() -> throw IllegalArgumentException("Invalid phone number format")
+                    !Patterns.PHONE.matcher(phone)
+                        .matches() -> throw IllegalArgumentException("Invalid phone number format")
+
                     password.isBlank() -> throw IllegalArgumentException("Password cannot be empty")
                     password.length < 6 -> throw IllegalArgumentException("Password must be at least 6 characters")
                     confirmPassword != password -> throw IllegalArgumentException("Confirm Password does not match")
@@ -135,7 +149,6 @@ class AuthViewModel : ViewModel() {
                     .build()
                 firebaseUser.updateProfile(profileUpdates).await()
 
-                // Chuẩn bị dữ liệu người dùng với ngày tạo
                 val userMap = mapOf(
                     "uid" to firebaseUser.uid,
                     "username" to username,
@@ -172,7 +185,7 @@ class AuthViewModel : ViewModel() {
         val currentUser = auth.currentUser
 
         viewModelScope.launch {
-            delay(2000)
+//            delay(500)
 
             if (currentUser != null) {
                 try {
@@ -206,7 +219,6 @@ class AuthViewModel : ViewModel() {
         confirmPassword: String,
         role: String
     ) {
-        // Reset lỗi trước đó
         _errorMessage.value = ""
 
         // Kiểm tra đầu vào
@@ -276,8 +288,13 @@ class AuthViewModel : ViewModel() {
     }
 
     // Lấy hoặc tạo profile người dùng
-    private suspend fun getOrCreateUserProfile(userId: String, email: String?, displayName: String?): UserItem {
-        val profileRef = db.collection("users").document(userId).collection("profile").document("info")
+    private suspend fun getOrCreateUserProfile(
+        userId: String,
+        email: String?,
+        displayName: String?
+    ): UserItem {
+        val profileRef =
+            db.collection("users").document(userId).collection("profile").document("info")
         val snapshot = profileRef.get().await()
 
         return if (snapshot.exists()) {

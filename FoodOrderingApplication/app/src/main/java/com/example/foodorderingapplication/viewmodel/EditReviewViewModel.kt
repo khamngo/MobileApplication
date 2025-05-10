@@ -102,18 +102,6 @@ class EditReviewViewModel : ViewModel() {
         }
     }
 
-    fun deleteReview(reviewId: String) {
-        viewModelScope.launch {
-            try {
-                db.collection("reviews").document(reviewId)
-                    .delete()
-                    .await()
-            } catch (e: Exception) {
-                // Xử lý lỗi nếu cần
-            }
-        }
-    }
-
     fun resetState() {
         _uiState.value = EditReviewState()
     }

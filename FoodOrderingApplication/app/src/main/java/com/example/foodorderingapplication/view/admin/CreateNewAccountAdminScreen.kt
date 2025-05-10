@@ -236,7 +236,6 @@ fun CreateNewAccountScreen(
                 Text("Create New Account", fontSize = 16.sp, color = Color.White)
             }
 
-            // Hiển thị lỗi
             if (errorMessage.isNotEmpty()) {
                 Text(
                     text = errorMessage,
