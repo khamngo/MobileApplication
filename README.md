@@ -68,19 +68,12 @@ git clone https://github.com/khamngo/MobileApplication.git
 
 ```js
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /orders/{orderId} {
-      allow write: if request.auth != null;
-    }
-    match /carts/{userId}/items/{itemId} {
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    match /users/{userId}/shippingAddress/{addressId} {
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    match /users/{userId}/notifications/{notificationId} {
-      allow write: if request.auth != null && request.auth.uid == userId;
+    match /{document=**} {
+     allow read: if true; 
+      allow write: if request.auth != null; 
     }
   }
 }
