@@ -154,7 +154,7 @@ class AdminOrderDetailViewModel : ViewModel() {
                     .await()
                 _errorMessage.value = "Order cancelled successfully"
                 sendNotification(
-                    title = "Order Cancelled",
+                    title = "Order Cancelled by Admin",
                     body = "Your order #${order.orderId.takeLast(5)} has been cancelled.",
                     orderId = orderId
                 )
@@ -217,7 +217,7 @@ class AdminOrderDetailViewModel : ViewModel() {
                     orderId = orderId,
                     timestamp = Timestamp.now(),
                     isRead = false,
-                    type = "order",
+                    type = "order", // Có thể tùy chỉnh loại thông báo
                     time = time,
                     dotColor = Color.Blue
                 )

@@ -21,7 +21,7 @@ class AdminOrderViewModel : ViewModel() {
         fetchAllOrders()
     }
 
-    private fun fetchAllOrders() {
+    internal fun fetchAllOrders() {
         viewModelScope.launch {
             try {
                 val snapshot = db.collection("orders")

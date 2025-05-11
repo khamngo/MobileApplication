@@ -23,7 +23,9 @@ import com.example.foodorderingapplication.viewmodel.OrderViewModel
 @Composable
 fun OrderListScreen(navController: NavController, orderViewModel: AdminOrderViewModel = viewModel()) {
     val orders by orderViewModel.orders.collectAsState()
-
+    LaunchedEffect(Unit) {
+        orderViewModel.fetchAllOrders()
+    }
     Column(modifier = Modifier.fillMaxSize()) {
         HeaderSection("Orders"){
             navController.popBackStack()

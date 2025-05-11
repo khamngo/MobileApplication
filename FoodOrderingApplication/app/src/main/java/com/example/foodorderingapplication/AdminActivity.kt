@@ -14,6 +14,7 @@ import com.example.foodorderingapplication.view.admin.AddFoodScreen
 import com.example.foodorderingapplication.view.admin.AdminAccountScreen
 import com.example.foodorderingapplication.view.admin.CreateNewAccountScreen
 import com.example.foodorderingapplication.view.admin.EditFoodScreen
+import com.example.foodorderingapplication.view.admin.FoodDetailScreen
 import com.example.foodorderingapplication.view.admin.HomeAdminScreen
 import com.example.foodorderingapplication.view.admin.OrderDetailScreen
 import com.example.foodorderingapplication.view.admin.OrderListScreen
@@ -47,6 +48,10 @@ fun NavigationGraphAdmin() {
         composable("edit_food/{foodId}") {backStackEntry ->
             val foodId = backStackEntry.arguments?.getString("foodId") ?: ""
             EditFoodScreen(navController = navController, foodId = foodId)
+        }
+        composable("food_detail/{foodId}") {backStackEntry ->
+            val foodId = backStackEntry.arguments?.getString("foodId") ?: ""
+            FoodDetailScreen(navController = navController, foodId = foodId)
         }
         composable("order") { OrderListScreen(navController = navController) }
 

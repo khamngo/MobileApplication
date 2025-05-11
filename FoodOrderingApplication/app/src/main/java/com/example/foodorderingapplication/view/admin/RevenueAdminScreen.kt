@@ -214,23 +214,24 @@ fun RevenueScreen(
 
 @Composable
 fun RevenueSummary(totalOrders: Int, totalRevenue: Double, bestSelling: String) {
-   Column(   horizontalAlignment = Alignment.CenterHorizontally,        modifier = Modifier
-       .fillMaxWidth()
-) {
-       Row(
-           modifier = Modifier
-               .fillMaxWidth(),
-           horizontalArrangement = Arrangement.SpaceEvenly,
-           verticalAlignment = Alignment.CenterVertically
-       ) {
-           CardInfo(title = "Total Orders", value = "$totalOrders")
-           CardInfo(
-               title = "Total Revenue",
-               value = "$${DecimalFormat("#,###").format(totalRevenue)}"
-           )
-       }
-       CardInfo(title = "Best-selling", value = bestSelling)
-   }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CardInfo(title = "Total Orders", value = "$totalOrders")
+            CardInfo(
+                title = "Total Revenue",
+                value = "$${DecimalFormat("#,###").format(totalRevenue)}"
+            )
+        }
+        CardInfo(title = "Best-selling", value = bestSelling)
+    }
 }
 
 @Composable
@@ -398,7 +399,8 @@ fun DateTextField(
         try {
             val sdf = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
             calendar.time = sdf.parse(date) ?: Date()
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
     val datePickerDialog = remember {
@@ -440,7 +442,8 @@ fun RevenueChart(data: List<Pair<String, Double>>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp).horizontalScroll(rememberScrollState())
+            .padding(16.dp)
+            .horizontalScroll(rememberScrollState())
     ) {
         Column(
             modifier = Modifier

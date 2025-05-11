@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.view.admin
 
+import android.R.attr.onClick
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -92,6 +93,7 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
                     items(searchResults) { food ->
                         FoodCard(
                             foodItem = food,
+                            onClick = {navController.navigate("food_detail/${food.id}")},
                             onEdit = { navController.navigate("edit_food/${food.id}") },
                             onDelete = {
                                 selectedFoodItemToDelete = food
@@ -132,12 +134,12 @@ fun HomeAdminScreen(navController: NavController, viewModel: FoodViewModel = vie
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun FoodCard(foodItem: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun FoodCard(foodItem: FoodItem,onClick:() -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp).clickable{onClick()},
         colors = CardDefaults.cardColors(Color.White),
         shape = RoundedCornerShape(8.dp)
     ) {

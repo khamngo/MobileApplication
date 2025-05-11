@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -19,10 +20,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,31 +51,38 @@ import coil.compose.AsyncImage
 import com.example.foodorderingapplication.R
 import com.example.foodorderingapplication.model.CartItem
 import com.example.foodorderingapplication.model.FoodItem
+import com.example.foodorderingapplication.model.ReviewItem
 import com.example.foodorderingapplication.view.SubtotalAndButton
+import com.example.foodorderingapplication.view.admin.ReviewItem
 import com.example.foodorderingapplication.viewmodel.CartViewModel
 import com.example.foodorderingapplication.viewmodel.FavoriteViewModel
 import com.example.foodorderingapplication.viewmodel.FoodDetailViewModel
+import com.example.foodorderingapplication.viewmodel.ReviewDetailViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlin.collections.take
 
 @Composable
 fun FoodDetailScreen(
     navController: NavHostController,
-    foodId: String?,
+    foodId: String,
     viewModel: FoodDetailViewModel = viewModel(),
-    cartViewModel: CartViewModel = viewModel()
+    cartViewModel: CartViewModel = viewModel(),
+    reviewViewModel: ReviewDetailViewModel = viewModel()
 ) {
     val foodDetail by viewModel.foodDetail.collectAsState()
-
     val portionPrices by viewModel.portionPrices.collectAsState()
     val drinkPrices by viewModel.drinkPrices.collectAsState()
     val subtotal by viewModel.subtotal.collectAsState()
-
     val selectedPortion by viewModel.selectedPortion.collectAsState()
     val quantity by viewModel.quantity.collectAsState()
     val selectedDrink by viewModel.selectedDrink.collectAsState()
     val instructions by viewModel.instructions.collectAsState()
+    val reviews by reviewViewModel.reviews.collectAsState()
 
     LaunchedEffect(foodId) {
-        foodId?.let { viewModel.fetchFoodById(it) }
+        foodId.let { viewModel.fetchFoodById(it) }
+        reviewViewModel.fetchReviews(foodId)
     }
 
     Box(
@@ -85,7 +101,6 @@ fun FoodDetailScreen(
                     foodItem = it,
                     imageUrl = it.imageUrl,
                     name = it.name,
-                    description = it.description,
                     navController = navController
                 )
 
@@ -97,14 +112,12 @@ fun FoodDetailScreen(
                         text = it.name,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
-
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = it.description,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-
                     )
                 }
 
@@ -113,6 +126,12 @@ fun FoodDetailScreen(
                     QuantitySelector(quantity) { viewModel.updateQuantity(it) }
                     ExtraDrinksSelection(drinkPrices, selectedDrink) { viewModel.updateDrink(it) }
                     InstructionsInput(instructions) { viewModel.updateInstructions(it) }
+
+                    // Thêm phần đánh giá
+                    ReviewSection(
+                        reviews = reviews,
+                        onViewAllClick = { navController.navigate("review_all/${foodId}") }
+                    )
                 }
             }
         } ?: run {
@@ -137,7 +156,7 @@ fun FoodDetailScreen(
                                 foodId = it.id,
                                 name = it.name,
                                 imageUrl = it.imageUrl,
-                                price =  when (selectedPortion) {
+                                price = when (selectedPortion) {
                                     "6" -> it.price
                                     "8" -> it.price + 2.0
                                     "10" -> it.price + 4.0
@@ -158,11 +177,88 @@ fun FoodDetailScreen(
 }
 
 @Composable
+fun ReviewSection(
+    reviews: List<ReviewItem>,
+    onViewAllClick: () -> Unit
+) {
+    Column(modifier = Modifier.padding(vertical = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Reviews",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            TextButton(onClick = onViewAllClick) {
+                Text(
+                    text = "View All",
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Hiển thị tối đa 2 đánh giá
+        reviews.take(2).forEach { review ->
+            ReviewItem(reviewItem = review)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+fun ReviewItem(reviewItem: ReviewItem) {
+    val formattedDate = SimpleDateFormat("h a : dd-MM-yyyy", Locale.getDefault())
+        .format(reviewItem.date.toDate())
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+
+            Text(reviewItem.reviewer, fontWeight = FontWeight.SemiBold)
+
+            Text(
+                text = formattedDate,
+                fontStyle = FontStyle.Italic,
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row {
+            repeat(5) { index ->
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Star",
+                    tint = if (index < reviewItem.rating) Color(0xFFFFD700) else Color.Gray,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = reviewItem.reviewText,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
 fun FoodHeaderSection(
     foodItem: FoodItem,
     imageUrl: String,
     name: String,
-    description: String,
     navController: NavHostController,
     favoriteViewModel: FavoriteViewModel = viewModel()
 ) {

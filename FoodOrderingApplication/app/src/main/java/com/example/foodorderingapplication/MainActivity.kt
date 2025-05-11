@@ -26,6 +26,7 @@ import com.example.foodorderingapplication.view.menu.CategoryScreen
 import com.example.foodorderingapplication.view.menu.CheckoutScreen
 import com.example.foodorderingapplication.view.menu.FoodDetailScreen
 import com.example.foodorderingapplication.view.menu.MenuScreen
+import com.example.foodorderingapplication.view.menu.ReviewAllScreen
 import com.example.foodorderingapplication.view.menu.ThankYouScreen
 import com.example.foodorderingapplication.view.notification.NotificationScreen
 import com.example.foodorderingapplication.view.profile.AboutUsScreen
@@ -89,7 +90,7 @@ fun NavigationGraph() {
             route = "food_detail/{foodId}",
             arguments = listOf(navArgument("foodId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val foodId = backStackEntry.arguments?.getString("foodId")
+            val foodId = backStackEntry.arguments?.getString("foodId") ?: ""
             FoodDetailScreen(navController = navController, foodId = foodId)
         }
 
@@ -112,6 +113,10 @@ fun NavigationGraph() {
         composable("review/{orderId}") { backStackEntry ->
             val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             ReviewScreen(navController = navController, orderId = orderId)
+        }
+        composable("review_all/{foodId}") { backStackEntry ->
+            val foodId = backStackEntry.arguments?.getString("foodId") ?: ""
+            ReviewAllScreen(navController = navController, foodId = foodId)
         }
         composable("edit_review/{reviewId}") { backStackEntry ->
             val reviewId = backStackEntry.arguments?.getString("reviewId") ?: ""

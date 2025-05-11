@@ -112,6 +112,10 @@ fun UserManagementScreen(
                                     color = Color.DarkGray
                                 )
                                 Text(
+                                    text = "Phone: ${user.phone}",
+                                    color = Color.DarkGray
+                                )
+                                Text(
                                     text = "Role: ${user.role}",
                                     color = Color.DarkGray
                                 )

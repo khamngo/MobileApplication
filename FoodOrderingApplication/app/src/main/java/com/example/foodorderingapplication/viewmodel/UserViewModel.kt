@@ -1,5 +1,6 @@
 package com.example.foodorderingapplication.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.UserItem
@@ -32,6 +33,7 @@ class UserViewModel : ViewModel() {
             try {
                 // Lấy danh sách tất cả user IDs từ collection "users"
                 val userDocs = db.collection("users").get().await()
+                Log.d("FetchUsers", "Found ${userDocs.size()} users")
                 if (userDocs.isEmpty) {
                     _errorMessage.value = "No users found in Firestore"
                     _userList.value = emptyList()

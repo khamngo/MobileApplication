@@ -61,7 +61,9 @@ fun ReviewDetailScreen(
         viewModel.fetchReviews(foodId)
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.White)) {
         HeaderSection("Review Detail") {
             navController.popBackStack()
         }
@@ -94,7 +96,8 @@ fun ReviewDetailScreen(
             ) {
                 // Lấy thông tin món ăn từ review đầu tiên
                 val foodInfo = reviews.first()
-                val averageRating = if (reviews.isNotEmpty()) reviews.map { it.rating }.average().toFloat() else 0f
+                val averageRating =
+                    if (reviews.isNotEmpty()) reviews.map { it.rating }.average().toFloat() else 0f
 
                 item {
                     // Image + Title
@@ -112,9 +115,11 @@ fun ReviewDetailScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(horizontalArrangement = Arrangement.SpaceBetween,
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()) {
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Column {
                             Text(
                                 foodInfo.foodName,
@@ -175,10 +180,9 @@ fun ReviewItem(reviewItem: ReviewItem, onReplyClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column {
-                Text(reviewItem.reviewer, fontWeight = FontWeight.SemiBold)
-                Text("Review detail", fontSize = 14.sp)
-            }
+
+            Text(reviewItem.reviewer, fontWeight = FontWeight.SemiBold)
+
             Text(
                 text = formattedDate,
                 fontStyle = FontStyle.Italic,
@@ -186,6 +190,8 @@ fun ReviewItem(reviewItem: ReviewItem, onReplyClick: () -> Unit) {
                 fontSize = 14.sp
             )
         }
+
+        Text("Review detail", fontSize = 14.sp)
 
         Spacer(modifier = Modifier.height(8.dp))
 
