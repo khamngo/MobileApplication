@@ -15,6 +15,64 @@ The Food Ordering Application is a mobile application built using Kotlin and Jet
 - Firebase Account: Access to Firebase Console for project setup
 - Java Development Kit (JDK): Version 11 or higher
 - Internet Connection: Required for Firebase integration and deployment
+- Create a Firebase Project:
+## Installation
+- Step 1: Clone the Repository
+https://github.com/khamngo/MobileApplication
+- Step 2: Set Up Firebase
+1. Create a Firebase Project:
+- Go to Firebase Console.
+- Click "Add Project", enter a name (e.g., "FoodOrderingApp"), and follow the setup wizard.
+- Enable Authentication, Firestore, and Cloud Messaging.
+2. Download Configuration Files:
+- Download the google-services.json file from the Firebase Console (Project Settings > General) and place it in the app/ directory of your Android project.
+3. Enable Firestore Rules:
+ - In Firebase Console, go to Firestore Database > Rules and set:
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /orders/{orderId} {
+      allow write: if request.auth != null;
+    }
+    match /carts/{userId}/items/{itemId} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /users/{userId}/shippingAddress/{addressId} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /users/{userId}/notifications/{notificationId} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+- Step 3: Configure the Project
+1. Open in Android Studio:
+- Open the project in Android Studio and sync Gradle.
+2. Add Dependencies:
+- Update build.gradle (Module: app) with the following dependencies:
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:33.1.2')
+    implementation 'com.google.firebase:firebase-auth-ktx'
+    implementation 'com.google.firebase:firebase-firestore-ktx'
+    implementation 'com.google.firebase:firebase-messaging-ktx'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'org.json:json:20230227'
+    implementation 'androidx.compose.ui:ui:1.6.0'
+    implementation 'androidx.compose.material:material:1.6.0'
+
+}
+3. Set Up Permissions:
+- Add to AndroidManifest.xml:
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+- Step 4: Build and Run
+1. Build the Project:
+- Click "Build" > "Make Project" in Android Studio to resolve dependencies.
+2. Run the App:
+- Connect an Android device or use an emulator.
+- Click "Run" to launch the app.
 ## Usage
 - Login/Register: Use Firebase Authentication to log in or register
 - Add to Cart: Browse food items and add them to the cart
