@@ -45,7 +45,6 @@ A **mobile food ordering application** built with **Kotlin** and **Jetpack Compo
 
 ```bash
 git clone https://github.com/khamngo/MobileApplication.git
-cd MobileApplication
 ```
 
 ---
@@ -101,16 +100,34 @@ In `app/build.gradle`:
 
 ```kotlin
 dependencies {
-    implementation platform("com.google.firebase:firebase-bom:33.1.2")
-    implementation "com.google.firebase:firebase-auth-ktx"
-    implementation "com.google.firebase:firebase-firestore-ktx"
-    implementation "com.google.firebase:firebase-messaging-ktx"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
-    implementation "com.squareup.okhttp3:okhttp:4.12.0"
-    implementation "org.json:json:20230227"
-    implementation "androidx.compose.ui:ui:1.6.0"
-    implementation "androidx.compose.material:material:1.6.0"
+    // Firebase & Google
+    implementation(platform("com.google.firebase:firebase-bom:33.11.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.android.gms:play-services-auth:21.1.1")
+    implementation("com.google.android.material:material:1.9.0")
+    // Ktor
+    implementation("io.ktor:ktor-client-android:2.3.7")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+    // Coroutine
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    // OkHttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Compose
+    implementation("androidx.compose.material3:material3-window-size-class:1.1.0")
+    implementation("androidx.compose.material:material-icons-extended:1.5.0")
+    implementation("com.google.accompanist:accompanist-pager:0.32.0")
+    // Credential APIs
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 }
 ```
 
