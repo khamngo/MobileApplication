@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -95,7 +96,7 @@ fun CreateNewAccountScreen(
             title = { Text(text = "Confirm") },
             text = { Text("Do you want to go to the login page?") },
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         authViewModel.logout()
 
@@ -114,8 +115,10 @@ fun CreateNewAccountScreen(
                 }
             },
             dismissButton = {
-                Button(
+                TextButton(
                     onClick = {
+                        navController.popBackStack()
+                        authViewModel.resetCreateAccountState()
                         showDialog.value = false
                     }
                 ) {

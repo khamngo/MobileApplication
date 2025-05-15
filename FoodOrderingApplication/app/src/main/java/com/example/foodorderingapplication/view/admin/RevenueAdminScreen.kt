@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -218,18 +219,16 @@ fun RevenueSummary(totalOrders: Int, totalRevenue: Double, bestSelling: String) 
         horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
             .fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CardInfo(title = "Total Orders", value = "$totalOrders")
-            CardInfo(
-                title = "Total Revenue",
-                value = "$${DecimalFormat("#,###").format(totalRevenue)}"
-            )
-        }
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CardInfo(title = "Total Orders", value = "$totalOrders")
+                CardInfo(
+                    title = "Total Revenue",
+                    value = "$${DecimalFormat("#,###").format(totalRevenue)}"
+                )
+            }
+
         CardInfo(title = "Best-selling", value = bestSelling)
     }
 }
@@ -344,7 +343,6 @@ fun CategoryRevenueSection(categoryRevenue: List<Pair<String, Double>>) {
                 textAlign = TextAlign.Center
             )
         } else {
-            // Không sử dụng LazyColumn bên trong, thay bằng Column để tránh xung đột cuộn
             Column {
                 categoryRevenue.forEach { (category, revenue) ->
                     Row(

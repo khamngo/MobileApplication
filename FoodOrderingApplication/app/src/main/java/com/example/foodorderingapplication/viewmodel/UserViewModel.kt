@@ -4,12 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodorderingapplication.model.UserItem
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlin.jvm.java
 
 class UserViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -33,7 +35,6 @@ class UserViewModel : ViewModel() {
             try {
                 // Lấy danh sách tất cả user IDs từ collection "users"
                 val userDocs = db.collection("users").get().await()
-                Log.d("FetchUsers", "Found ${userDocs.size()} users")
                 if (userDocs.isEmpty) {
                     _errorMessage.value = "No users found in Firestore"
                     _userList.value = emptyList()

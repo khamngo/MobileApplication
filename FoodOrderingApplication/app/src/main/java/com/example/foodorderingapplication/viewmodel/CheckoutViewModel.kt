@@ -1,6 +1,7 @@
 package com.example.foodorderingapplication.viewmodel
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -218,7 +219,10 @@ class CheckoutViewModel : ViewModel() {
 
     // Đặt hàng
     fun placeOrder() {
+        Log.d("Notification saved:", _isShippingAddressValid.toString())
+
         if (!_isShippingAddressValid.value) {
+
             _errorMessage.value = "Please add a shipping address before placing the order"
             return
         }

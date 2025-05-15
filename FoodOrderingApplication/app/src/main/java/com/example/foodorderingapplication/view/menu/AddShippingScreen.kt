@@ -165,8 +165,8 @@ fun AddShippingScreen(
             street = street,
             provinceError = fieldErrors.provinceError,
             streetError = fieldErrors.streetError,
-            districtError = fieldErrors.provinceError,
-            wardError = fieldErrors.streetError,
+            districtError = fieldErrors.districtError,
+            wardError = fieldErrors.wardError,
             onProvinceChange = {
                 province = it
                 viewModel.onProvinceChange(it)

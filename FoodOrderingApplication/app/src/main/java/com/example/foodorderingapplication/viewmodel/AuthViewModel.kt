@@ -127,8 +127,8 @@ class AuthViewModel : ViewModel() {
                 when {
                     username.isBlank() -> throw IllegalArgumentException("Username cannot be empty")
                     email.isBlank() -> throw IllegalArgumentException("Email cannot be empty")
-                    !Patterns.EMAIL_ADDRESS.matcher(email)
-                        .matches() -> throw IllegalArgumentException("Invalid email format")
+                    !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> throw IllegalArgumentException("Invalid email format")
+                    !email.endsWith("@gmail.com", ignoreCase = true) -> throw IllegalArgumentException("Email must be a Gmail address")
 
                     phone.isBlank() -> throw IllegalArgumentException("Phone cannot be empty")
                     !Patterns.PHONE.matcher(phone)
@@ -222,7 +222,11 @@ class AuthViewModel : ViewModel() {
         _errorMessage.value = ""
 
         // Kiểm tra đầu vào
-        if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+        if (username.isBlank() ||
+            email.isBlank() ||
+        !Patterns.EMAIL_ADDRESS.matcher(email).matches() ||
+        !email.endsWith("@gmail.com", ignoreCase = true) ||
+        password.isBlank() || confirmPassword.isBlank()) {
             _errorMessage.value = "Please fill in all required fields"
             return
         }

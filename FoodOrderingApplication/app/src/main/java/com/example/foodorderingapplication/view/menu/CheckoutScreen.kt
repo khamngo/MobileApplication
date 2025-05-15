@@ -1,6 +1,7 @@
 package com.example.foodorderingapplication.view.menu
 
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
@@ -98,6 +99,7 @@ fun CheckoutScreen(
     val isShippingAddressValid by viewModel.isShippingAddressValid.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val context = LocalContext.current
+    Log.d("Notification saved:", isShippingAddressValid.toString())
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val savedStateHandle = currentBackStackEntry?.savedStateHandle
@@ -383,6 +385,7 @@ fun OrderSummary(taxes: Double, subtotal: Double, total: Double, isFreeShipping:
             SummaryRow("Shipping total", if (isFreeShipping) "Free" else "$2.00")
             SummaryRow("Taxes", "$taxes")
             HorizontalDivider()
+//            Spacer(modifier = Modifier.height(4.dp))
             SummaryRow(
                 "Total",
                 "$${"%.2f".format(total)}",

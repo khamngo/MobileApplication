@@ -59,6 +59,7 @@ fun SubtotalAndButton(
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(10.dp),
+            enabled = buttonEnabled,
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCC00))
         ) {
             Text(
